@@ -14,7 +14,7 @@ export async function GET(request: NextRequest, { params }: Context) {
   return lead ? ok(lead) : fail(404, { code: "not_found", message: "This lead no longer exists." });
 }
 
-/** PATCH /api/admin/leads/:id { status } — move a lead through the pipeline. */
+/** PATCH /api/admin/leads/:id { status }  move a lead through the pipeline. */
 export async function PATCH(request: NextRequest, { params }: Context) {
   const auth = await requireAdmin(request);
   if ("response" in auth) return auth.response;

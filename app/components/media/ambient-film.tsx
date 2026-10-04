@@ -3,6 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import type { StaticImageData } from "next/image";
 import { Pause, Play } from "lucide-react";
+import { useLocale } from "@/app/components/i18n/use-locale";
+
+const LABEL = {
+  en: { pause: "Pause background film", play: "Play background film" },
+  fr: { pause: "Mettre en pause la vidéo de fond", play: "Lire la vidéo de fond" },
+};
 
 /**
  * A silent, looping film behind text.
@@ -24,6 +30,7 @@ export function AmbientFilm({
   poster: StaticImageData;
   className?: string;
 }) {
+  const label = LABEL[useLocale()];
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [playing, setPlaying] = useState(false);
   const [userPaused, setUserPaused] = useState(false);
@@ -96,9 +103,7 @@ export function AmbientFilm({
         ) : (
           <Play className="size-4" aria-hidden />
         )}
-        <span className="sr-only">
-          {playing ? "Pause background film" : "Play background film"}
-        </span>
+        <span className="sr-only">{playing ? label.pause : label.play}</span>
       </button>
     </>
   );

@@ -14,7 +14,7 @@ import {
   sameOrigin,
 } from "@/app/server/http";
 
-/** POST /api/admin/session — sign in. DELETE — sign out. */
+/** POST /api/admin/session  sign in. DELETE  sign out. */
 export async function POST(request: NextRequest) {
   if (!sameOrigin(request)) return crossOriginResponse();
 

@@ -1,10 +1,11 @@
 import type { HourPoint } from "@/app/lib/solar/estimate";
 import { formatNumber } from "@/app/lib/format";
+import type { Locale } from "@/app/lib/i18n";
 import { cn } from "@/app/lib/utils";
 
 /**
  * A site's average day, hour by hour: how much of the load the sun covers
- * directly, how much the battery carries after dark, and what is still bought
+ * directly, how much the battery carries after dark, and what isstill bought
  * from the grid. This chart is the visual signature of the site — the same
  * three colours mean the same three things everywhere.
  *
@@ -37,11 +38,34 @@ function line(values: number[], y: (v: number) => number) {
   return `M${xs.map((h, i) => `${x(h).toFixed(1)},${y(v[i]!).toFixed(1)}`).join("L")}`;
 }
 
-export const SERIES = {
-  direct: { label: "Solar, used directly", swatch: "bg-sun" },
-  battery: { label: "From the battery", swatch: "bg-lagoon" },
-  grid: { label: "Still from the grid", swatch: "bg-laterite" },
-} as const;
+const SWATCH = { direct: "bg-sun", battery: "bg-lagoon", grid: "bg-laterite" } as const;
+type Series = keyof typeof SWATCH;
+
+const COPY: Record<
+  Locale,
+  { series: Record<Series, string>; demand: string; summary: (share: number) => string }
+> = {
+  en: {
+    series: {
+      direct: "Solar, used directly",
+      battery: "From the battery",
+      grid: "Still from the grid",
+    },
+    demand: "Site demand",
+    summary: (share) =>
+      `Over an average day, solar and storage cover ${share} percent of the load; the rest comes from the grid.`,
+  },
+  fr: {
+    series: {
+      direct: "Solaire, consommé directement",
+      battery: "Depuis la batterie",
+      grid: "Toujours depuis le réseau",
+    },
+    demand: "Demande du site",
+    summary: (share) =>
+      `Sur une journée moyenne, le solaire et le stockage couvrent ${share} pour cent de la consommation ; le reste vient du réseau.`,
+  },
+};
 
 export function DayCurve({
   day,
@@ -49,7 +73,9 @@ export function DayCurve({
   className,
   tone = "light",
   showLegend = true,
+  locale,
 }: {
+  locale: Locale;
   day: HourPoint[];
   title: string;
   className?: string;
@@ -72,6 +98,7 @@ export function DayCurve({
   const totalLoad = totals.direct + totals.battery + totals.grid;
   const share = totalLoad ? (totals.direct + totals.battery) / totalLoad : 0;
 
+  const t = COPY[locale];
   const dark = tone === "dark";
   const axis = dark ? "var(--color-on-ink-muted)" : "var(--color-muted)";
 
@@ -80,7 +107,7 @@ export function DayCurve({
       <svg
         viewBox={`0 0 ${W} ${H}`}
         role="img"
-        aria-label={`${title}. Over an average day, solar and storage cover ${Math.round(share * 100)} percent of the load; the rest comes from the grid.`}
+        aria-label={`${title}. ${t.summary(Math.round(share * 100))}`}
         className="h-auto w-full overflow-visible"
       >
         {/* Night bands: the hours the sun cannot help. */}
@@ -156,15 +183,10 @@ export function DayCurve({
       {showLegend && (
         <figcaption>
           <ul className="type-small grid gap-x-5 gap-y-1.5 sm:grid-cols-2">
-            {(Object.keys(SERIES) as Array<keyof typeof SERIES>).map((key) => (
+            {(Object.keys(SWATCH) as Series[]).map((key) => (
               <li key={key} className="flex items-center gap-2">
-                <span
-                  aria-hidden
-                  className={cn("size-3 shrink-0 rounded-[2px]", SERIES[key].swatch)}
-                />
-                <span className={dark ? "text-on-ink-muted" : "text-muted"}>
-                  {SERIES[key].label}
-                </span>
+                <span aria-hidden className={cn("size-3 shrink-0 rounded-[2px]", SWATCH[key])} />
+                <span className={dark ? "text-on-ink-muted" : "text-muted"}>{t.series[key]}</span>
                 <span className="tabular ml-auto font-semibold sm:ml-0">
                   {formatNumber(totals[key])} kWh
                 </span>
@@ -175,7 +197,7 @@ export function DayCurve({
                 aria-hidden
                 className={cn("h-0 w-3 shrink-0 border-t-2", dark ? "border-paper" : "border-ink")}
               />
-              <span className={dark ? "text-on-ink-muted" : "text-muted"}>Site demand</span>
+              <span className={dark ? "text-on-ink-muted" : "text-muted"}>{t.demand}</span>
               <span className="tabular ml-auto font-semibold sm:ml-0">
                 {formatNumber(totalLoad)} kWh
               </span>

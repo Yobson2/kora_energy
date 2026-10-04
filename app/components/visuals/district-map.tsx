@@ -1,16 +1,33 @@
+import type { Locale } from "@/app/lib/i18n";
+
+const COPY: Record<Locale, { label: string; lagoon: string; caption: string }> = {
+  en: {
+    label: "Illustrative map of Abidjan's lagoon with a marker on the Plateau district",
+    lagoon: "Ébrié lagoon",
+    caption: "Illustrative map, not to scale. Kora Energy is fictional and has no real office.",
+  },
+  fr: {
+    label: "Carte indicative de la lagune d'Abidjan avec un repère sur le quartier du Plateau",
+    lagoon: "Lagune Ébrié",
+    caption:
+      "Carte indicative, pas à l'échelle. Kora Energy est fictive et n'a pas de vrais bureaux.",
+  },
+};
+
 /**
  * An abstract, ILLUSTRATIVE map: lagoon, shoreline and a marker for the
- * Plateau district. Deliberately not a real map embed — the office doesn't
+ * Plateau district. Deliberately not a real map embed  the office doesn't
  * exist, a third-party map would set tracking cookies, and a pin on a real
  * street would imply a real address.
  */
-export function DistrictMap() {
+export function DistrictMap({ locale }: { locale: Locale }) {
+  const t = COPY[locale];
   return (
     <figure className="flex flex-col gap-3">
       <svg
         viewBox="0 0 480 320"
         role="img"
-        aria-label="Illustrative map of Abidjan's lagoon with a marker on the Plateau district"
+        aria-label={t.label}
         className="bg-plaster h-auto w-full rounded-[var(--radius-md)]"
       >
         {/* Lagoon: soft bands, echoing the logo's horizon lines. */}
@@ -64,12 +81,10 @@ export function DistrictMap() {
           Abidjan
         </text>
         <text x={24} y={300} fontSize={12} fill="var(--color-lagoon)">
-          Ébrié lagoon
+          {t.lagoon}
         </text>
       </svg>
-      <figcaption className="type-small text-muted">
-        Illustrative map, not to scale. Kora Energy is fictional and has no real office.
-      </figcaption>
+      <figcaption className="type-small text-muted">{t.caption}</figcaption>
     </figure>
   );
 }

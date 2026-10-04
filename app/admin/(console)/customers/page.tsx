@@ -8,7 +8,7 @@ import { formatDate, formatKwp, formatXofCompact } from "@/app/lib/format";
 export const metadata: Metadata = { title: "Customers" };
 
 /**
- * Customers are won leads — a view, not a table. There is no second record
+ * Customers are won leads  a view, not a table. There is no second record
  * to keep in sync, and a customer's history is the lead's history.
  */
 export default async function CustomersPage() {
@@ -73,13 +73,13 @@ export default async function CustomersPage() {
                 <div>
                   <dt className="type-small text-muted">System</dt>
                   <dd className="tabular font-semibold">
-                    {c.estimate ? formatKwp(c.estimate.systemKwp) : "—"}
+                    {c.estimate ? formatKwp(c.estimate.systemKwp) : ""}
                   </dd>
                 </div>
                 <div>
                   <dt className="type-small text-muted">Value</dt>
                   <dd className="tabular font-semibold">
-                    {c.estimate ? formatXofCompact(c.estimate.investmentMidXof) : "—"}
+                    {c.estimate ? formatXofCompact(c.estimate.investmentMidXof) : ""}
                   </dd>
                 </div>
                 <div>

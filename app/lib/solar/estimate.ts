@@ -64,7 +64,7 @@ export type HourPoint = {
 };
 
 export type Estimate = {
-  /** Inputs after defaults were applied — what the numbers actually rest on. */
+  /** Inputs after defaults were applied  what the numbers actually rest on. */
   basis: {
     monthlyKwh: number;
     tariffXof: number;
@@ -89,7 +89,19 @@ export type Estimate = {
   day: HourPoint[];
 };
 
-export class EstimateInputError extends Error {}
+/**
+ * Inputs the estimator cannot size a system from. `code` is stable, so the
+ * interface can say it in the visitor's language; `message` is English, for
+ * the API and logs.
+ */
+export class EstimateInputError extends Error {
+  constructor(
+    readonly code: "no-consumption" | "area-too-small",
+    message: string
+  ) {
+    super(message);
+  }
+}
 
 const sum = (values: readonly number[]) => values.reduce((total, v) => total + v, 0);
 
@@ -137,7 +149,7 @@ export function resolveConsumption(input: EstimateInput): Estimate["basis"] {
       yieldKwhPerKwp: LOCATION[input.location].yieldKwhPerKwp,
     };
   }
-  throw new EstimateInputError("Enter a monthly bill or a monthly consumption.");
+  throw new EstimateInputError("no-consumption", "Enter a monthly bill or a monthly consumption.");
 }
 
 /**
@@ -216,7 +228,7 @@ export function estimate(input: EstimateInput): Estimate {
 
   // Grow the array in half-kWp steps while it still pays its way. The search
   // is bounded by the point where the array alone would produce three times
-  // the site's need — far beyond anything the self-use rule would accept.
+  // the site's need  far beyond anything the self-use rule would accept.
   const ceiling = Math.max(MIN_SYSTEM_KWP, (3 * dailyLoad) / dailyYieldPerKwp);
   let economicKwp = MIN_SYSTEM_KWP;
   for (let kwp = MIN_SYSTEM_KWP; kwp <= ceiling; kwp += KWP_STEP) {
@@ -230,6 +242,7 @@ export function estimate(input: EstimateInput): Estimate {
 
   if (systemKwp < MIN_SYSTEM_KWP) {
     throw new EstimateInputError(
+      "area-too-small",
       `The available area fits less than ${MIN_SYSTEM_KWP} kWp of panels. Enter a larger area, or leave it blank if you are not sure.`
     );
   }

@@ -9,14 +9,14 @@ import { seedLeads, seedProjects } from "@/app/server/seed";
  *
  * Everything above this file talks to the `Store` interface, never to a file
  * or a driver. The shipped adapter keeps the whole dataset in one JSON
- * document — fine for a concept with hundreds of rows, trivial to run anywhere,
+ * document  fine for a concept with hundreds of rows, trivial to run anywhere,
  * and honest about what it is. The production swap is a Postgres adapter
  * implementing the same interface (schema in docs/schema.sql); no route,
  * page or component changes when that happens.
  *
  * Adapter selection, by KORA_STORE:
  *   file    (default) .data/kora.json, atomic writes, serialised
- *   memory  per-process, resets on restart — for read-only hosts and demos
+ *   memory  per-process, resets on restart  for read-only hosts and demos
  */
 
 export type Dataset = {
@@ -102,7 +102,7 @@ class JsonFileStore implements Store {
 /**
  * On Windows, replacing a file fails with EPERM/EBUSY while another request
  * has it open for reading (reads are not serialised, only writes are). The
- * window is milliseconds, so a short backoff resolves it — the same strategy
+ * window is milliseconds, so a short backoff resolves it  the same strategy
  * graceful-fs uses. Any other error, or a lock that outlasts the retries, is
  * thrown as usual.
  */

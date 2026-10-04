@@ -7,7 +7,7 @@
  * would otherwise expose the API.
  *
  * Token: base64url(JSON payload) + "." + base64url(HMAC-SHA256(payload)).
- * Stateless — revocation is by rotating KORA_SESSION_SECRET. A multi-user
+ * Stateless  revocation is by rotating KORA_SESSION_SECRET. A multi-user
  * deployment would add a session table; the cookie format would not change.
  */
 

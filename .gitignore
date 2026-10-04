@@ -41,12 +41,12 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# audit artifacts — regenerable captures of our own build and the diff output.
+# audit artifacts  regenerable captures of our own build and the diff output.
 # audit/baseline/ is deliberately NOT ignored: it is the frozen reference the
 # Phase 4 pixel loop scores against, so it has to be version-controlled.
 /audit/local/
 /audit/diff/
 
-# local data store (JSON file adapter) — never commit customer data
+# local data store (JSON file adapter)  never commit customer data
 /.data/
 

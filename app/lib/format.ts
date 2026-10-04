@@ -1,7 +1,9 @@
 /**
- * Display formatting. The site is in English but money is FCFA (XOF), and the
- * local convention groups thousands with a space: "1 250 000 FCFA".
+ * Display formatting. Money is FCFA (XOF), and the local convention groups
+ * thousands with a space in both languages of the site: "1 250 000 FCFA".
+ * Only words change with the language; numbers look the same in both.
  */
+import type { Locale } from "@/app/lib/i18n";
 
 const group = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 });
 const group1 = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 });
@@ -25,8 +27,9 @@ export function formatXofCompact(value: number): string {
   return formatXof(value);
 }
 
-export function formatKwp(value: number): string {
-  return `${formatNumber(value, 1)} kWp`;
+/** Peak power: "kWp" in English, "kWc" (kilowatt-crête) in French. */
+export function formatKwp(value: number, locale: Locale = "en"): string {
+  return `${formatNumber(value, 1)} ${locale === "fr" ? "kWc" : "kWp"}`;
 }
 
 export function formatKwh(value: number): string {
@@ -39,8 +42,8 @@ export function formatPercent(share: number): string {
   return `${Math.round(share * 100)} %`;
 }
 
-export function formatYears(low: number, high: number): string {
-  return `${formatNumber(low, 1)}–${formatNumber(high, 1)} years`;
+export function formatYears(low: number, high: number, locale: Locale = "en"): string {
+  return `${formatNumber(low, 1)}–${formatNumber(high, 1)} ${locale === "fr" ? "ans" : "years"}`;
 }
 
 const dateFormat = new Intl.DateTimeFormat("en-GB", {
@@ -64,7 +67,7 @@ export function formatDateTime(iso: string): string {
   return dateTimeFormat.format(new Date(iso));
 }
 
-/** "3 h ago", "2 days ago" — for the back office, where recency is the point. */
+/** "3 h ago", "2 days ago"  for the back office, where recency is the point. */
 export function formatAge(iso: string, now: Date = new Date()): string {
   const minutes = Math.max(0, Math.round((now.getTime() - new Date(iso).getTime()) / 60_000));
   if (minutes < 1) return "just now";

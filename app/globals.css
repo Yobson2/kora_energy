@@ -1,18 +1,18 @@
 @import "tailwindcss";
 
 /* ============================================================================
- * Kora Energy — design tokens
+ * Kora Energy  design tokens
  *
  * Tailwind 4 is CSS-first: there is no tailwind.config.js. Everything the build
  * is allowed to use lives in this @theme block. A magic number in a component
  * is a bug; add a token here instead and say why.
  *
  * The palette is drawn from place, not from "Africa" as a motif:
- *   ink       the Ébrié lagoon at dusk — text and the dark sections
+ *   ink       the Ébrié lagoon at dusk  text and the dark sections
  *   plaster   the mineral render of Abidjan's modernist concrete
- *   sun       harmattan sunlight — solar energy, and the primary action
- *   laterite  red earth — grid and diesel energy (what the customer pays for)
- *   lagoon    stored energy — batteries
+ *   sun       harmattan sunlight  solar energy, and the primary action
+ *   laterite  red earth  grid and diesel energy (what the customer pays for)
+ *   lagoon    stored energy  batteries
  * The three energy colours are DATA colours first. They keep the same meaning
  * in every chart on the site, so a reader learns them once.
  * ========================================================================= */
@@ -235,7 +235,7 @@
 }
 
 /* ============================================================================
- * Motion. The site has ONE orchestrated moment — the day-curve drawing in.
+ * Motion. The site has ONE orchestrated moment  the day-curve drawing in.
  * Everything else moves only in response to the visitor.
  * ========================================================================= */
 @layer utilities {

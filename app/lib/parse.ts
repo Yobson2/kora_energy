@@ -7,11 +7,11 @@ export function parseAmount(raw: string | null | undefined): number | undefined 
   let text = raw.replace(/[\s  ]/g, "").replace(/[^\d.,-]/g, "");
   if (!text) return undefined;
 
-  // "1.250.000" — dots used as thousands separators.
+  // "1.250.000"  dots used as thousands separators.
   if (/^\d{1,3}(\.\d{3})+$/.test(text)) text = text.replace(/\./g, "");
-  // "1,250,000" — commas as thousands separators.
+  // "1,250,000"  commas as thousands separators.
   else if (/^\d{1,3}(,\d{3})+$/.test(text)) text = text.replace(/,/g, "");
-  // "1,5" — comma as the decimal mark.
+  // "1,5"  comma as the decimal mark.
   else text = text.replace(",", ".");
 
   const value = Number(text);

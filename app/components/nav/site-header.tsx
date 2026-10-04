@@ -1,18 +1,57 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { Container } from "@/app/components/primitives/container";
+import { Link } from "@/app/components/primitives/link";
 import { ButtonLink } from "@/app/components/primitives/button";
 import { Logo } from "@/app/components/nav/logo";
-import { primaryNav } from "@/app/content/nav";
+import { LocaleSwitcher } from "@/app/components/i18n/locale-switcher";
+import { useLocale } from "@/app/components/i18n/use-locale";
+import { navigation } from "@/app/content/nav";
+import { splitLocale, type Locale } from "@/app/lib/i18n";
 import { cn } from "@/app/lib/utils";
 
-function isActive(pathname: string, href: string) {
-  return pathname === href || pathname.startsWith(`${href}/`);
+/** `path` is language-free, so "/fr/projects" and "/projects" both match "/projects". */
+function isActive(path: string, href: string) {
+  return path === href || path.startsWith(`${href}/`);
 }
+
+const COPY: Record<
+  Locale,
+  {
+    home: string;
+    main: string;
+    mobile: string;
+    menu: string;
+    open: string;
+    close: string;
+    quote: string;
+    calculate: string;
+  }
+> = {
+  en: {
+    home: "Kora Energy home",
+    main: "Main",
+    mobile: "Mobile",
+    menu: "Site menu",
+    open: "Open menu",
+    close: "Close menu",
+    quote: "Request a quote",
+    calculate: "Calculate your savings",
+  },
+  fr: {
+    home: "Kora Energy, accueil",
+    main: "Principal",
+    mobile: "Mobile",
+    menu: "Menu du site",
+    open: "Ouvrir le menu",
+    close: "Fermer le menu",
+    quote: "Demander un devis",
+    calculate: "Calculer vos économies",
+  },
+};
 
 /**
  * Sticky header. The mobile menu is a native <dialog> opened with showModal():
@@ -23,6 +62,10 @@ function isActive(pathname: string, href: string) {
  */
 export function SiteHeader() {
   const pathname = usePathname();
+  const path = splitLocale(pathname).path;
+  const locale = useLocale();
+  const nav = navigation(locale);
+  const t = COPY[locale];
   const [menuOpen, setMenuOpen] = useState(false);
   const dialogRef = useRef<HTMLDialogElement | null>(null);
 
@@ -44,14 +87,14 @@ export function SiteHeader() {
   return (
     <header className="bg-paper/95 border-line sticky top-0 z-20 border-b backdrop-blur-sm">
       <Container className="flex h-[var(--spacing-header)] items-center justify-between gap-6">
-        <Link href="/" aria-label="Kora Energy home" className="rounded-[var(--radius-xs)]">
+        <Link href="/" aria-label={t.home} className="rounded-[var(--radius-xs)]">
           <Logo />
         </Link>
 
-        <nav aria-label="Main" className="hidden lg:block">
+        <nav aria-label={t.main} className="hidden lg:block">
           <ul className="flex items-center gap-1">
-            {primaryNav.map((link) => {
-              const active = isActive(pathname, link.href);
+            {nav.primary.map((link) => {
+              const active = isActive(path, link.href);
               return (
                 <li key={link.href}>
                   <Link
@@ -73,8 +116,9 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <LocaleSwitcher />
           <ButtonLink href="/quote" variant="primary" className="hidden sm:inline-flex">
-            Request a quote
+            {t.quote}
           </ButtonLink>
           <button
             type="button"
@@ -84,14 +128,14 @@ export function SiteHeader() {
             className="hover:bg-plaster -mr-2 rounded-[var(--radius-sm)] p-2 lg:hidden"
           >
             <Menu className="size-6" aria-hidden />
-            <span className="sr-only">Open menu</span>
+            <span className="sr-only">{t.open}</span>
           </button>
         </div>
       </Container>
 
       <dialog
         ref={dialogRef}
-        aria-label="Site menu"
+        aria-label={t.menu}
         onClose={() => setMenuOpen(false)}
         className="bg-paper text-ink m-0 h-dvh max-h-none w-full max-w-none p-0 backdrop:bg-transparent lg:hidden"
       >
@@ -104,17 +148,13 @@ export function SiteHeader() {
               className="hover:bg-plaster -mr-2 rounded-[var(--radius-sm)] p-2"
             >
               <X className="size-6" aria-hidden />
-              <span className="sr-only">Close menu</span>
+              <span className="sr-only">{t.close}</span>
             </button>
           </div>
-          <nav aria-label="Mobile" className="flex-1 overflow-y-auto px-4 py-6">
+          <nav aria-label={t.mobile} className="flex-1 overflow-y-auto px-4 py-6">
             <ul className="flex flex-col">
-              {[
-                { label: "Home", href: "/" },
-                ...primaryNav,
-                { label: "Questions", href: "/faq" },
-              ].map((link) => {
-                const active = link.href === "/" ? pathname === "/" : isActive(pathname, link.href);
+              {[nav.home, ...nav.primary, nav.questions].map((link) => {
+                const active = link.href === "/" ? path === "/" : isActive(path, link.href);
                 return (
                   <li key={link.href} className="border-line border-b">
                     <Link
@@ -140,7 +180,7 @@ export function SiteHeader() {
               size="lg"
               onClick={() => setMenuOpen(false)}
             >
-              Request a quote
+              {t.quote}
             </ButtonLink>
             <ButtonLink
               href="/calculator"
@@ -148,7 +188,7 @@ export function SiteHeader() {
               size="lg"
               onClick={() => setMenuOpen(false)}
             >
-              Calculate your savings
+              {t.calculate}
             </ButtonLink>
           </div>
         </div>

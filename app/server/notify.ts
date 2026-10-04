@@ -7,7 +7,7 @@ import type { Lead } from "@/app/lib/domain";
  * The concept ships with a log-only notifier. The interface is what matters:
  * an email (Resend, SES) or WhatsApp Business implementation slots in here and
  * nothing that calls `notifyNewLead` changes. Failures are logged and
- * swallowed ON PURPOSE — the lead is already saved, and a visitor must never
+ * swallowed ON PURPOSE  the lead is already saved, and a visitor must never
  * see an error because the team's email provider had a bad minute.
  */
 export interface Notifier {
@@ -17,7 +17,7 @@ export interface Notifier {
 const logNotifier: Notifier = {
   async newLead(lead) {
     console.info(
-      `[notify] new ${lead.source} lead ${lead.reference} — ${lead.contact.company ?? lead.contact.name}`
+      `[notify] new ${lead.source} lead ${lead.reference}  ${lead.contact.company ?? lead.contact.name}`
     );
   },
 };

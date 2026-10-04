@@ -1,12 +1,21 @@
+"use client";
+
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import { AlertCircle, CheckCircle2, ChevronDown } from "lucide-react";
+import { useLocale } from "@/app/components/i18n/use-locale";
 import { cn } from "@/app/lib/utils";
 
 /**
  * Form controls. Each field owns its label, hint and error, and wires them
  * together with ids and aria-describedby so a screen reader announces the
- * error with the field — no form can forget to.
+ * error with the field  no form can forget to.
+ *
+ * Callers pass translated labels and messages; the few words the controls add
+ * themselves follow the page language.
  */
+
+const OPTIONAL = { en: "(optional)", fr: "(facultatif)" };
+const HONEYPOT = { en: "Leave this field empty", fr: "Laissez ce champ vide" };
 
 const control =
   "w-full rounded-[var(--radius-sm)] bg-paper text-ink ring-1 ring-inset ring-line " +
@@ -32,11 +41,12 @@ export function describedBy(id: string, hint?: unknown, error?: string) {
 }
 
 function FieldShell({ id, label, hint, error, optional, className, children }: FieldShellProps) {
+  const locale = useLocale();
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
       <label htmlFor={id} className="type-label">
         {label}
-        {optional && <span className="text-muted font-normal"> (optional)</span>}
+        {optional && <span className="text-muted font-normal"> {OPTIONAL[locale]}</span>}
       </label>
       {hint && (
         <p id={`${id}-hint`} className="type-small text-muted -mt-0.5">
@@ -320,9 +330,10 @@ export function CheckboxField({
  * display:none, because some bots skip fields that are display:none.
  */
 export function Honeypot({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const locale = useLocale();
   return (
     <div aria-hidden className="absolute -left-[9999px] h-px w-px overflow-hidden">
-      <label htmlFor="website">Leave this field empty</label>
+      <label htmlFor="website">{HONEYPOT[locale]}</label>
       <input
         id="website"
         name="website"

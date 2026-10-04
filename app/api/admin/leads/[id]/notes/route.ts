@@ -5,7 +5,7 @@ import { fail, internalError, ok, parseBody, requireAdmin } from "@/app/server/h
 
 type Context = { params: Promise<{ id: string }> };
 
-/** POST /api/admin/leads/:id/notes { text } — add an internal note to the timeline. */
+/** POST /api/admin/leads/:id/notes { text }  add an internal note to the timeline. */
 export async function POST(request: NextRequest, { params }: Context) {
   const auth = await requireAdmin(request);
   if ("response" in auth) return auth.response;

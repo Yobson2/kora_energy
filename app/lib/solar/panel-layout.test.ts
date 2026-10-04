@@ -3,7 +3,7 @@ import { layoutPanels, panelCount } from "./panel-layout";
 
 // Mirrors the seeded case studies (app/server/seed.ts). If a project's roof
 // cannot physically hold its array, the drawing would silently show fewer
-// panels than the capacity claims — this catches that.
+// panels than the capacity claims  this catches that.
 const PROJECTS = [
   { kwp: 160, roof: { width: 42, depth: 28 } },
   { kwp: 60, roof: { width: 36, depth: 12 } },

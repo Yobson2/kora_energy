@@ -1,7 +1,7 @@
 -- Postgres schema for the production `Store` adapter.
 --
 -- The concept ships with a JSON-file adapter (app/server/store.ts). This is the
--- relational shape the same domain maps onto — app/lib/domain.ts is the
+-- relational shape the same domain maps onto  app/lib/domain.ts is the
 -- source of truth for field names and allowed values. Nothing above the store
 -- interface changes when the adapter is swapped.
 

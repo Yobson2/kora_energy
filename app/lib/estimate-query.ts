@@ -12,7 +12,7 @@ import { parseAmount } from "@/app/lib/parse";
 /**
  * Carries a visitor's inputs between the homepage preview, the calculator and
  * the quote form as URL parameters. Shareable, bookmarkable, and the back
- * button works — no hidden client state to lose. Everything read back is
+ * button works  no hidden client state to lose. Everything read back is
  * validated against the known values; anything unexpected is dropped.
  */
 

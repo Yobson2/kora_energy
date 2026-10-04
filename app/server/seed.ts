@@ -4,6 +4,7 @@ import type {
   LeadSource,
   LeadStatus,
   Project,
+  ProjectCopy,
   SolutionSlug,
   Timeline,
 } from "@/app/lib/domain";
@@ -24,7 +25,7 @@ export function seedProjects(): Project[] {
   const updatedAt = new Date().toISOString();
   const base = { published: true, updatedAt } as const;
 
-  return [
+  const projects: Project[] = [
     {
       ...base,
       id: newId(),
@@ -34,7 +35,7 @@ export function seedProjects(): Project[] {
       segment: "hotel",
       location: "abidjan",
       area: "Cocody, Abidjan",
-      year: 2026,
+      year: 2024,
       systemKwp: 160,
       batteryKwh: 280,
       annualProductionKwh: 208_000,
@@ -63,7 +64,7 @@ export function seedProjects(): Project[] {
       segment: "school",
       location: "yamoussoukro",
       area: "Yamoussoukro",
-      year: 2026,
+      year: 2024,
       systemKwp: 60,
       batteryKwh: 60,
       annualProductionKwh: 84_000,
@@ -73,7 +74,7 @@ export function seedProjects(): Project[] {
       summary:
         "Two classroom blocks fitted with panels and a modest battery, sized so lessons, the computer lab and the borehole pump never wait for the grid.",
       challenge:
-        "The school's load sits almost entirely between 07:00 and 16:00 — an ideal match for solar — but the computer lab lost sessions to voltage drops, and the water pump stopped during every outage.",
+        "The school's load sits almost entirely between 07:00 and 16:00  an ideal match for solar  but the computer lab lost sessions to voltage drops, and the water pump stopped during every outage.",
       approach:
         "Panels on both blocks feed a single hybrid inverter. A 60 kWh battery is reserved for the lab and the pump rather than the whole site, which kept it small and the budget within one fiscal year.",
       results: [
@@ -102,7 +103,7 @@ export function seedProjects(): Project[] {
       summary:
         "A 420 kWp array across 3 000 m² of steel roof, with no battery at all, built for the fastest possible payback on a two-shift operation.",
       challenge:
-        "Cold rooms, forklifts charging and lighting for two shifts made electricity the warehouse's second-largest cost after labour. The operator wanted savings, not backup — the site already has a grid connection it trusts.",
+        "Cold rooms, forklifts charging and lighting for two shifts made electricity the warehouse's second-largest cost after labour. The operator wanted savings, not backup  the site already has a grid connection it trusts.",
       approach:
         "With no storage to pay for, the design question was only how much array the daytime load could absorb. We stopped at the point where more panels would mostly feed energy back to nobody, and routed forklift charging to the midday hours.",
       results: [
@@ -150,7 +151,7 @@ export function seedProjects(): Project[] {
       segment: "clinic",
       location: "korhogo",
       area: "Near Korhogo",
-      year: 2026,
+      year: 2024,
       systemKwp: 24,
       batteryKwh: 60,
       annualProductionKwh: 37_200,
@@ -179,7 +180,7 @@ export function seedProjects(): Project[] {
       segment: "household",
       location: "abidjan",
       area: "Riviera, Abidjan",
-      year: 2026,
+      year: 2024,
       systemKwp: 8,
       batteryKwh: 15,
       annualProductionKwh: 10_400,
@@ -200,7 +201,115 @@ export function seedProjects(): Project[] {
       roof: { width: 11, depth: 8 },
     },
   ];
+  return projects.map((p) => {
+    const fr = PROJECTS_FR[p.slug];
+    return fr ? { ...p, translations: { fr } } : p;
+  });
 }
+
+/**
+ * French text for the seeded case studies. Figures stay on the project; only
+ * words are translated. A study created in the back office has none, and its
+ * French page shows the English text (marked lang="en").
+ */
+const PROJECTS_FR: Record<string, ProjectCopy> = {
+  "business-hotel-cocody": {
+    title: "Garder un hôtel d'affaires au frais pendant le pic de l'après-midi",
+    client: "Hôtel d'affaires, 84 chambres",
+    area: "Cocody, Abidjan",
+    summary:
+      "Une centrale en toiture et une batterie qui assurent la climatisation de l'hôtel aux heures les plus chaudes et maintiennent les étages clients pendant les coupures du réseau.",
+    challenge:
+      "La climatisation représente environ les deux tiers de la consommation de l'hôtel et culmine entre 13:00 et 17:00, précisément quand les tarifs pèsent le plus. De courtes coupures plusieurs fois par mois démarraient le groupe électrogène, et les clients remarquaient chaque basculement.",
+    approach:
+      "Nous avons dimensionné la centrale sur la charge de climatisation de jour plutôt que sur toute la facture, puis ajouté un stockage calibré pour le pic des arrivées du soir et deux heures de secours critique. Un inverseur de source garde les ascenseurs, la réception et les étages clients sur batterie, tandis que la cuisine et la blanchisserie attendent le retour du réseau.",
+    results: [
+      { label: "De la consommation annuelle couverte par le solaire", value: "46 %" },
+      { label: "Heures de groupe électrogène évitées", value: "≈ 70 %" },
+      { label: "Basculements perçus par les clients", value: "Aucun" },
+    ],
+  },
+  "secondary-school-yamoussoukro": {
+    title: "Une journée de cours qui tourne entièrement au soleil",
+    client: "Lycée, 1 200 élèves",
+    area: "Yamoussoukro",
+    summary:
+      "Deux bâtiments de classes équipés de panneaux et d'une batterie modeste, dimensionnés pour que les cours, la salle informatique et la pompe du forage n'attendent jamais le réseau.",
+    challenge:
+      "La consommation de l'établissement se concentre presque entièrement entre 07:00 et 16:00, une correspondance idéale avec le solaire. Mais la salle informatique perdait des séances à cause des chutes de tension, et la pompe à eau s'arrêtait à chaque coupure.",
+    approach:
+      "Les panneaux des deux bâtiments alimentent un seul onduleur hybride. Une batterie de 60 kWh est réservée à la salle informatique et à la pompe plutôt qu'à tout le site, ce qui l'a gardée petite et a maintenu le budget sur un seul exercice.",
+    results: [
+      { label: "De la consommation annuelle couverte par le solaire", value: "78 %" },
+      { label: "Séances informatiques perdues aux coupures", value: "0 par trimestre" },
+      { label: "Retour sur investissement estimé", value: "5–6 ans" },
+    ],
+  },
+  "logistics-warehouse-vridi": {
+    title: "Un toit d'entrepôt devenu le premier actif du site",
+    client: "Entrepôt logistique, zone portuaire",
+    area: "Vridi, Abidjan",
+    summary:
+      "Une centrale de 420 kWc sur 3 000 m² de toiture métallique, sans aucune batterie, conçue pour le retour sur investissement le plus rapide possible sur une activité en deux équipes.",
+    challenge:
+      "Les chambres froides, la recharge des chariots élévateurs et l'éclairage de deux équipes faisaient de l'électricité le deuxième poste de dépenses après la main-d'œuvre. L'exploitant voulait des économies, pas du secours : le site dispose déjà d'un raccordement au réseau fiable.",
+    approach:
+      "Sans stockage à financer, la seule question était la quantité de panneaux que la consommation de jour pouvait absorber. Nous nous sommes arrêtés là où des panneaux supplémentaires auraient surtout produit une énergie que personne n'utilise, et avons déplacé la recharge des chariots vers la mi-journée.",
+    results: [
+      { label: "De la consommation annuelle couverte par le solaire", value: "31 %" },
+      { label: "Autoconsommation de la production solaire", value: "96 %" },
+      { label: "Retour sur investissement estimé", value: "3–4 ans" },
+    ],
+  },
+  "supermarket-yopougon": {
+    title: "Une réfrigération qui paie sa propre électricité",
+    client: "Supermarché de quartier",
+    area: "Yopougon, Abidjan",
+    summary:
+      "Des panneaux dimensionnés sur la chaîne du froid et l'éclairage d'une journée d'ouverture de 12 heures, avec un suivi en direct qui signale un compresseur défaillant avant toute perte de marchandise.",
+    challenge:
+      "La réfrigération tourne jour et nuit, mais le pic du magasin correspond aux heures d'ouverture. Le propriétaire n'avait en outre aucun moyen de voir sa consommation avant l'arrivée de la facture mensuelle.",
+    approach:
+      "Une centrale sans batterie couvre la consommation des heures d'ouverture, et un sous-comptage sur chaque circuit de froid alimente le tableau de bord de suivi, où une consommation inhabituelle déclenche une alerte.",
+    results: [
+      { label: "De la consommation annuelle couverte par le solaire", value: "38 %" },
+      { label: "Circuits suivis", value: "14" },
+      { label: "Retour sur investissement estimé", value: "3–5 ans" },
+    ],
+  },
+  "rural-clinic-korhogo": {
+    title: "Une clinique qui ne rationne plus son groupe électrogène",
+    client: "Centre de santé rural",
+    area: "Près de Korhogo",
+    summary:
+      "Un système compact qui alimente toute la nuit la réfrigération des vaccins, l'éclairage et la salle d'accouchement, dans l'une des régions les plus ensoleillées du pays.",
+    challenge:
+      "Sur un départ rural fragile, la clinique perdait le courant presque tous les soirs, et les livraisons de gazole étaient irrégulières. Le personnel rationnait les heures de groupe, ce qui voulait dire des accouchements à la lampe torche.",
+    approach:
+      "Le fort ensoleillement de Korhogo permet à une petite centrale de beaucoup produire. La batterie est dimensionnée pour la nuit, et le réfrigérateur à vaccins est sur un circuit protégé, le dernier à être délesté.",
+    results: [
+      { label: "De la consommation annuelle couverte par le solaire", value: "82 %" },
+      { label: "Nuits sur groupe électrogène", value: "Rares" },
+      { label: "Arrêts du réfrigérateur à vaccins", value: "Aucun" },
+    ],
+  },
+  "family-home-riviera": {
+    title: "Des soirées calmes sans groupe électrogène",
+    client: "Maison familiale",
+    area: "Riviera, Abidjan",
+    summary:
+      "Une petite centrale et une batterie qui gardent ventilateurs, éclairage, réfrigérateur et Wi-Fi allumés pendant les coupures du soir, sans le bruit d'un groupe à essence.",
+    challenge:
+      "Les coupures du soir obligeaient à démarrer un petit groupe dans une rue résidentielle dense. La vraie priorité de la famille était la continuité, les économies venant en plus.",
+    approach:
+      "Les circuits essentiels ont été regroupés sur un tableau de secours pour que la climatisation ne vide jamais la batterie. La centrale est dimensionnée pour la recharger entièrement lors d'une journée ordinaire.",
+    results: [
+      { label: "De la consommation annuelle couverte par le solaire", value: "62 %" },
+      { label: "Autonomie des circuits essentiels", value: "≈ 10 heures" },
+      { label: "Groupe électrogène", value: "Vendu" },
+    ],
+  },
+};
 
 type LeadSeed = {
   name: string;
@@ -274,7 +383,7 @@ const DEMO_LEADS: LeadSeed[] = [
     bill: 1_900_000,
     independence: "balanced",
     daysAgo: 3,
-    notes: ["Called — the bursar wants a proposal before the board meets in November."],
+    notes: ["Called  the bursar wants a proposal before the board meets in November."],
   },
   {
     name: "Fatou Diabaté",
@@ -303,7 +412,7 @@ const DEMO_LEADS: LeadSeed[] = [
     bill: 1_200_000,
     independence: "savings",
     daysAgo: 8,
-    notes: ["Site visit booked. Roof is fibre-cement — check load capacity."],
+    notes: ["Site visit booked. Roof is fibre-cement  check load capacity."],
   },
   {
     name: "Awa Ouattara",
@@ -332,7 +441,7 @@ const DEMO_LEADS: LeadSeed[] = [
     bill: 6_500_000,
     independence: "savings",
     daysAgo: 17,
-    notes: ["Landlord and tenant both need to sign — proposal sent to both."],
+    notes: ["Landlord and tenant both need to sign  proposal sent to both."],
   },
   {
     name: "Mariam Bamba",
@@ -389,7 +498,7 @@ const DEMO_LEADS: LeadSeed[] = [
     bill: 450_000,
     independence: "savings",
     daysAgo: 40,
-    notes: ["Decided to wait — budget committed elsewhere this year."],
+    notes: ["Decided to wait  budget committed elsewhere this year."],
   },
   {
     name: "Salimata Koné",

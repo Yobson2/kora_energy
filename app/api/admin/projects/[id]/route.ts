@@ -10,7 +10,7 @@ type Context = { params: Promise<{ id: string }> };
 const notFound = () => fail(404, { code: "not_found", message: "This project no longer exists." });
 
 /**
- * PATCH /api/admin/projects/:id — partial update. Sending only
+ * PATCH /api/admin/projects/:id  partial update. Sending only
  * { published: false } is how a case study is taken off the site.
  */
 export async function PATCH(request: NextRequest, { params }: Context) {

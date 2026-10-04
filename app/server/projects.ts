@@ -41,6 +41,17 @@ export async function createProject(input: ProjectInput): Promise<Project> {
   });
 }
 
+/** The English fields a translation is made from. */
+const COPY_FIELDS = [
+  "title",
+  "client",
+  "area",
+  "summary",
+  "challenge",
+  "approach",
+  "results",
+] as const;
+
 export async function updateProject(id: string, input: Partial<ProjectInput>): Promise<Project> {
   return getStore().update((data) => {
     const project = data.projects.find((p) => p.id === id);
@@ -48,7 +59,14 @@ export async function updateProject(id: string, input: Partial<ProjectInput>): P
     if (input.slug && data.projects.some((p) => p.slug === input.slug && p.id !== id)) {
       throw new ConflictError("Another project already uses this address.");
     }
+    // The back office edits English only. If the words change, the old
+    // translation no longer says the same thing: drop it, and the French page
+    // falls back to the English until someone translates again.
+    const wordsChanged = COPY_FIELDS.some(
+      (f) => f in input && JSON.stringify(input[f]) !== JSON.stringify(project[f])
+    );
     Object.assign(project, input, { updatedAt: new Date().toISOString() });
+    if (wordsChanged) delete project.translations;
     return project;
   });
 }

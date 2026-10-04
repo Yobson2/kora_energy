@@ -1,11 +1,16 @@
-import Link from "next/link";
+import { Link } from "@/app/components/primitives/link";
 import type { ReactNode } from "react";
 import { ChevronRight } from "lucide-react";
 import { Container } from "@/app/components/primitives/container";
 import { BreadcrumbJsonLd } from "@/app/components/seo/json-ld";
+import { localizePath, type Locale } from "@/app/lib/i18n";
 import { cn } from "@/app/lib/utils";
 
+/** `path` is language-free: "/projects", not "/fr/projects". */
 type Crumb = { name: string; path: string };
+
+const HOME: Record<Locale, string> = { en: "Home", fr: "Accueil" };
+const BREADCRUMB: Record<Locale, string> = { en: "Breadcrumb", fr: "Fil d'Ariane" };
 
 /**
  * The opening of every inner page: breadcrumb, the page's single h1, and a
@@ -18,18 +23,20 @@ export function PageHeader({
   crumbs,
   children,
   className,
+  locale,
 }: {
+  locale: Locale;
   title: string;
   lead?: ReactNode;
   crumbs: Crumb[];
   children?: ReactNode;
   className?: string;
 }) {
-  const trail = [{ name: "Home", path: "/" }, ...crumbs];
+  const trail = [{ name: HOME[locale], path: "/" }, ...crumbs];
   return (
     <section className={cn("bg-plaster border-line border-b", className)}>
       <Container className="flex flex-col gap-6 pt-8 pb-12 md:pt-10 md:pb-16">
-        <nav aria-label="Breadcrumb">
+        <nav aria-label={BREADCRUMB[locale]}>
           <ol className="type-small text-muted flex flex-wrap items-center gap-1">
             {trail.map((crumb, i) => {
               const last = i === trail.length - 1;
@@ -61,7 +68,9 @@ export function PageHeader({
         </div>
         {children}
       </Container>
-      <BreadcrumbJsonLd items={trail} />
+      <BreadcrumbJsonLd
+        items={trail.map((c) => ({ name: c.name, path: localizePath(c.path, locale) }))}
+      />
     </section>
   );
 }

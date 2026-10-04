@@ -4,20 +4,20 @@
 
 A commercial-solar company's website has one business job: turn a visitor who is curious
 about solar into a qualified lead, and give the sales team what they need to call that
-lead back. Everything here serves that funnel — **calculator → quote request → lead →
-pipeline → customer** — with the public case studies managed from the same back office.
+lead back. Everything here serves that funnel  **calculator → quote request → lead →
+pipeline → customer**  with the public case studies managed from the same back office.
 
 ## 2. Layers
 
 ```
 app/
-  (site)/             public pages — one route group, one layout (banner, header, footer)
-  admin/              back office — login + (console) route group with its own shell
-  api/                JSON API — route handlers only; no business logic lives here
+  (site)/             public pages  one route group, one layout (banner, header, footer)
+  admin/              back office  login + (console) route group with its own shell
+  api/                JSON API  route handlers only; no business logic lives here
   components/         UI, grouped by role: primitives/ forms/ nav/ visuals/ home/
                       calculator/ quote/ contact/ projects/ admin/ seo/
   content/            copy that isn't data: solutions, FAQ, navigation
-  lib/                shared by browser and server — must stay free of Node APIs
+  lib/                shared by browser and server  must stay free of Node APIs
     solar/            the estimator (pure), assumptions, panel layout
     domain.ts         the business vocabulary: lead statuses, sources, Project, Lead
     validation.ts     Zod schemas used by forms AND routes
@@ -56,8 +56,8 @@ with serialised, atomic (write-then-rename) mutations, plus an in-memory adapter
 read-only hosts. The Postgres shape is in [docs/schema.sql](docs/schema.sql). Customers are
 not a table: a customer is a lead marked Won, so the two can't drift apart.
 
-**Derived, not stored, statistics.** The dashboard's figures — overdue replies, pipeline
-kWp and value, win rate, source mix — are computed from the leads on every request.
+**Derived, not stored, statistics.** The dashboard's figures  overdue replies, pipeline
+kWp and value, win rate, source mix  are computed from the leads on every request.
 There is no counter that can disagree with the records.
 
 **Two auth gates.** `proxy.ts` redirects or 401s unauthenticated admin traffic. Every
@@ -78,9 +78,22 @@ Publishing, editing or deleting a project in the back office calls `revalidatePa
 the homepage, the index and the affected slugs.
 
 **URL as state.** Calculator inputs are mirrored into the query string with
-`history.replaceState` — shareable and bookmarkable, with no server round trip per
+`history.replaceState`  shareable and bookmarkable, with no server round trip per
 keystroke. The same parameters prefill the quote form. Back-office lead filters are a plain
 GET form, so a filtered view is a link.
+
+**Languages.** Côte d'Ivoire is francophone, so the public site is bilingual. English
+keeps the original unprefixed addresses and French lives under `/fr`. Every public route
+sits under `app/[lang]`, whose layout is the root layout and sets `<html lang>`; the back
+office has its own English root layout. `proxy.ts` rewrites unprefixed requests to
+`/en/…` internally and redirects a typed `/en/…` to the clean address, so each page has
+one URL per language, both prerendered, with canonical and `hreflang` alternates and a
+sitemap that lists both. The switcher in the header links to the same page in the other
+language and carries the query string, so calculator inputs survive the switch. There is no
+cookie: the language is the address. Translations are plain typed objects next to the
+copy, not a library or key files. Case studies store an optional French translation;
+editing the English in the back office drops it, so a French page never shows text that
+no longer matches, and an untranslated study falls back to English marked `lang="en"`.
 
 ## 4. Design system
 
@@ -93,7 +106,7 @@ body. Semantic type classes (`.type-h1`, `.type-figure` …) carry whole respons
 
 Photography is free-licence stock (Unsplash, Mixkit), registered once in
 [app/content/media.ts](app/content/media.ts) with alt text and credit, and used only where it
-shows a kind of equipment or work — solution pages, the process, About. It never appears
+shows a kind of equipment or work  solution pages, the process, About. It never appears
 on case studies: those are concepts, and are illustrated with roof plans generated from
 each project's capacity
 and footprint, and a unit test guarantees every seeded roof physically fits its array.

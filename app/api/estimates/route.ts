@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { estimate, EstimateInputError } from "@/app/lib/solar/estimate";
-import { estimateInputSchema } from "@/app/lib/validation";
+import { publicSchemas } from "@/app/lib/validation";
 import {
   clientIp,
   fail,
@@ -9,10 +9,11 @@ import {
   parseBody,
   rateLimit,
   rateLimitedResponse,
+  requestLocale,
 } from "@/app/server/http";
 
 /**
- * POST /api/estimates — run the solar estimator.
+ * POST /api/estimates  run the solar estimator.
  *
  * Stateless: nothing is stored. The website calculator runs the same engine in
  * the browser for instant feedback; this endpoint exists so other clients (a
@@ -21,10 +22,11 @@ import {
  * nothing and writes nothing.
  */
 export async function POST(request: NextRequest) {
+  const locale = requestLocale(request);
   const limit = rateLimit(`estimate:${clientIp(request)}`, 60, 60_000);
-  if (!limit.allowed) return rateLimitedResponse(limit.retryAfter);
+  if (!limit.allowed) return rateLimitedResponse(limit.retryAfter, locale);
 
-  const parsed = await parseBody(request, estimateInputSchema);
+  const parsed = await parseBody(request, publicSchemas(locale).estimateInputSchema);
   if ("response" in parsed) return parsed.response;
 
   try {
@@ -33,6 +35,6 @@ export async function POST(request: NextRequest) {
     if (error instanceof EstimateInputError) {
       return fail(422, { code: "unprocessable", message: error.message });
     }
-    return internalError(error);
+    return internalError(error, locale);
   }
 }

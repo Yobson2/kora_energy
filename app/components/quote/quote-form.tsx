@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Check, CheckCircle2 } from "lucide-react";
 import type { z } from "zod";
 import { Button, ButtonLink } from "@/app/components/primitives/button";
+import { Link } from "@/app/components/primitives/link";
 import {
   CheckboxField,
   ChoiceGroup,
@@ -16,29 +16,23 @@ import {
   TextField,
   TextareaField,
 } from "@/app/components/forms/fields";
-import { solutions } from "@/app/content/solutions";
-import { TIMELINES, TIMELINE_LABEL, type SolutionSlug, type Timeline } from "@/app/lib/domain";
+import { useLocale } from "@/app/components/i18n/use-locale";
+import { getSolutions } from "@/app/content/solutions";
+import { labels } from "@/app/content/labels";
+import { TIMELINES, type SolutionSlug, type Timeline } from "@/app/lib/domain";
 import {
-  LOCATION,
   LOCATIONS,
   SEGMENTS,
-  SEGMENT_LABEL,
   type Independence,
   type Location,
   type Segment,
 } from "@/app/lib/solar/assumptions";
-import {
-  fieldErrors,
-  quoteContactSchema,
-  quoteEnergySchema,
-  quoteRequestSchema,
-  quoteSiteSchema,
-  type FieldErrors,
-} from "@/app/lib/validation";
+import { fieldErrors, publicSchemas, type FieldErrors } from "@/app/lib/validation";
 import { apiRequest } from "@/app/lib/api-client";
 import { amountToInput, parseAmount } from "@/app/lib/parse";
 import { fromEstimateQuery } from "@/app/lib/estimate-query";
 import { formatNumber } from "@/app/lib/format";
+import type { Locale } from "@/app/lib/i18n";
 import { cn } from "@/app/lib/utils";
 import { useFocusFirstError } from "@/app/components/forms/use-focus-first-error";
 
@@ -48,11 +42,12 @@ import { useFocusFirstError } from "@/app/components/forms/use-focus-first-error
  * Design decisions:
  *  - Easy questions first (what and where), personal details last, so the
  *    visitor has invested a little before being asked for a phone number.
- *  - Each step validates against a slice of the SAME schema the API uses.
+ *  - Each step validates against a slice of the SAME schema the API uses,
+ *    built with messages in the page language.
  *  - On step change, focus moves to the new step's heading so screen-reader
  *    and keyboard users land where sighted users look.
- *  - The draft survives a reload (sessionStorage), so an accidental refresh
- *    on step 3 costs nothing. It is cleared on success.
+ *  - The draft survives a reload (sessionStorage), and a language switch, so
+ *    an accidental refresh on step 3 costs nothing. It is cleared on success.
  *  - Arriving from the calculator pre-fills everything already known.
  */
 
@@ -88,12 +83,167 @@ const EMPTY: Values = {
   website: "",
 };
 
-const STEPS = [
-  { key: "site", title: "Your site" },
-  { key: "energy", title: "Your energy use" },
-  { key: "contact", title: "Your details" },
-  { key: "review", title: "Review and send" },
-] as const;
+const STEP_KEYS = ["site", "energy", "contact", "review"] as const;
+
+const en = {
+  steps: {
+    site: "Your site",
+    energy: "Your energy use",
+    contact: "Your details",
+    review: "Review and send",
+  } as Record<(typeof STEP_KEYS)[number], string>,
+  progress: "Quote request progress",
+  stepOf: (n: number, total: number) => `Step ${n} of ${total}`,
+  completed: " (completed)",
+  prefilled: "We've filled in what you entered in the calculator. Check it and carry on.",
+  rateLimited: "Too many requests",
+  notSent: "Your request wasn't sent",
+  segment: "What kind of site is it?",
+  location: "Where is it?",
+  chooseCity: "Choose a city",
+  solution: "Which solution is closest to what you need?",
+  chooseSolution: "Choose a solution",
+  solutionHint: "Not sure? Pick the nearest one, and we'll advise after the call.",
+  timeline: "When would you like it installed?",
+  energyIntro: "A recent bill has both figures. If you only know one, that's fine.",
+  bill: "Average monthly electricity bill",
+  example: (n: string) => `e.g. ${n}`,
+  kwh: "Average monthly consumption",
+  generator: "Generator use",
+  perWeek: "h / week",
+  roof: "Roof space",
+  name: "Full name",
+  company: "Company or organisation",
+  email: "Email",
+  phone: "Phone",
+  phoneHint: "We call before we email. WhatsApp is fine.",
+  message: "Anything else we should know?",
+  messagePlaceholder: "Outages you deal with, equipment that must stay on, roof type…",
+  consentBefore:
+    "Kora Energy may use these details to prepare and discuss my quote, as described in the ",
+  privacy: "privacy notice",
+  back: "Back",
+  sending: "Sending your request…",
+  sendingStatus: "Sending your request",
+  continue: "Continue",
+  send: "Send quote request",
+  review: {
+    segment: "Type of site",
+    location: "Location",
+    solution: "Solution",
+    timeline: "Timeline",
+    bill: "Monthly bill",
+    kwh: "Monthly consumption",
+    generator: "Generator",
+    generatorValue: (h: number) => `${h} h a week`,
+    roof: "Roof space",
+    name: "Name",
+    company: "Company",
+    email: "Email",
+    phone: "Phone",
+    message: "Message",
+    change: "Change",
+  },
+  success: {
+    title: (first: string) => `Request received${first ? `, ${first}` : ""}.`,
+    refBefore: "Your reference is ",
+    refAfter: ". Quote it if you contact us about this request.",
+    next: [
+      ["Within one working day", "An energy specialist calls to go through your needs."],
+      ["Within about a week", "If solar makes sense for your site, we arrange a survey."],
+      ["After the survey", "You receive a written proposal with a fixed price."],
+    ] as Array<[string, string]>,
+    concept:
+      "Kora Energy is a concept project, so no one will actually call. Your request has been saved to the demonstration back office, where it appears as a new lead.",
+    projects: "Browse concept projects",
+    home: "Back to the homepage",
+  },
+};
+
+const fr: typeof en = {
+  steps: {
+    site: "Votre site",
+    energy: "Votre consommation",
+    contact: "Vos coordonnées",
+    review: "Vérifier et envoyer",
+  },
+  progress: "Progression de la demande de devis",
+  stepOf: (n, total) => `Étape ${n} sur ${total}`,
+  completed: " (terminée)",
+  prefilled: "Nous avons repris ce que vous avez saisi dans le simulateur. Vérifiez et continuez.",
+  rateLimited: "Trop de demandes",
+  notSent: "Votre demande n'a pas été envoyée",
+  segment: "De quel type de site s'agit-il ?",
+  location: "Où se trouve-t-il ?",
+  chooseCity: "Choisissez une ville",
+  solution: "Quelle solution est la plus proche de votre besoin ?",
+  chooseSolution: "Choisissez une solution",
+  solutionHint: "Pas sûr ? Choisissez la plus proche, nous vous conseillerons après l'appel.",
+  timeline: "Quand souhaitez-vous l'installation ?",
+  energyIntro:
+    "Une facture récente indique les deux chiffres. Si vous n'en connaissez qu'un, ce n'est pas grave.",
+  bill: "Facture d'électricité mensuelle moyenne",
+  example: (n) => `ex. ${n}`,
+  kwh: "Consommation mensuelle moyenne",
+  generator: "Groupe électrogène",
+  perWeek: "h / sem.",
+  roof: "Surface de toit",
+  name: "Nom complet",
+  company: "Entreprise ou organisation",
+  email: "E-mail",
+  phone: "Téléphone",
+  phoneHint: "Nous appelons avant d'écrire. WhatsApp convient aussi.",
+  message: "Autre chose à nous signaler ?",
+  messagePlaceholder:
+    "Coupures que vous subissez, équipements qui doivent rester allumés, type de toit…",
+  consentBefore:
+    "Kora Energy peut utiliser ces informations pour préparer et discuter de mon devis, comme décrit dans la ",
+  privacy: "politique de confidentialité",
+  back: "Retour",
+  sending: "Envoi de votre demande…",
+  sendingStatus: "Envoi de votre demande",
+  continue: "Continuer",
+  send: "Envoyer la demande de devis",
+  review: {
+    segment: "Type de site",
+    location: "Ville",
+    solution: "Solution",
+    timeline: "Délai",
+    bill: "Facture mensuelle",
+    kwh: "Consommation mensuelle",
+    generator: "Groupe électrogène",
+    generatorValue: (h) => `${h} h par semaine`,
+    roof: "Surface de toit",
+    name: "Nom",
+    company: "Entreprise",
+    email: "E-mail",
+    phone: "Téléphone",
+    message: "Message",
+    change: "Modifier",
+  },
+  success: {
+    title: (first) => `Demande reçue${first ? `, ${first}` : ""}.`,
+    refBefore: "Votre référence est ",
+    refAfter: ". Indiquez-la si vous nous contactez au sujet de cette demande.",
+    next: [
+      [
+        "Sous un jour ouvré",
+        "Un conseiller en énergie vous appelle pour faire le point sur vos besoins.",
+      ],
+      [
+        "Sous une semaine environ",
+        "Si le solaire a du sens pour votre site, nous organisons une visite.",
+      ],
+      ["Après la visite", "Vous recevez une proposition écrite à prix ferme."],
+    ],
+    concept:
+      "Kora Energy est un projet fictif : personne ne vous appellera réellement. Votre demande a été enregistrée dans le back-office de démonstration, où elle apparaît comme un nouveau prospect.",
+    projects: "Voir les projets fictifs",
+    home: "Retour à l'accueil",
+  },
+};
+
+const COPY: Record<Locale, typeof en> = { en, fr };
 
 const DRAFT_KEY = "kora.quote-draft.v1";
 
@@ -134,11 +284,16 @@ function contactPayload(v: Values) {
   };
 }
 
-const STEP_SCHEMA: Array<{ schema: z.ZodType; payload: (v: Values) => unknown; prefix: string }> = [
-  { schema: quoteSiteSchema, payload: sitePayload, prefix: "site" },
-  { schema: quoteEnergySchema, payload: energyPayload, prefix: "energy" },
-  { schema: quoteContactSchema, payload: contactPayload, prefix: "contact" },
-];
+function stepSchemas(
+  locale: Locale
+): Array<{ schema: z.ZodType; payload: (v: Values) => unknown; prefix: string }> {
+  const s = publicSchemas(locale);
+  return [
+    { schema: s.quoteSiteSchema, payload: sitePayload, prefix: "site" },
+    { schema: s.quoteEnergySchema, payload: energyPayload, prefix: "energy" },
+    { schema: s.quoteContactSchema, payload: contactPayload, prefix: "contact" },
+  ];
+}
 
 /** Which step owns a server error key like "contact.email". */
 function stepOf(key: string): number {
@@ -149,6 +304,10 @@ function stepOf(key: string): number {
 
 export function QuoteForm() {
   const params = useSearchParams();
+  const locale = useLocale();
+  const t = COPY[locale];
+  const l = labels(locale);
+  const solutions = getSolutions(locale);
   const [step, setStep] = useState(0);
   const [values, setValues] = useState<Values>(EMPTY);
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -195,7 +354,7 @@ export function QuoteForm() {
       const { consent: _c, website: _w, ...rest } = values;
       sessionStorage.setItem(DRAFT_KEY, JSON.stringify(rest));
     } catch {
-      // Storage unavailable — the form still works, it just won't survive a reload.
+      // Storage unavailable: the form still works, it just won't survive a reload.
     }
   }, [values, status.kind]);
 
@@ -220,7 +379,7 @@ export function QuoteForm() {
   };
 
   function validateStep(index: number): boolean {
-    const spec = STEP_SCHEMA[index];
+    const spec = stepSchemas(locale)[index];
     if (!spec) return true;
     const result = spec.schema.safeParse(spec.payload(values));
     if (result.success) {
@@ -237,12 +396,12 @@ export function QuoteForm() {
   }
 
   function next() {
-    if (validateStep(step)) setStep((s) => Math.min(s + 1, STEPS.length - 1));
+    if (validateStep(step)) setStep((s) => Math.min(s + 1, STEP_KEYS.length - 1));
   }
 
   async function submit() {
     // Re-validate everything: a draft restored from storage skipped the steps.
-    for (let i = 0; i < STEP_SCHEMA.length; i++) {
+    for (let i = 0; i < stepSchemas(locale).length; i++) {
       if (!validateStep(i)) {
         setStep(i);
         return;
@@ -258,7 +417,7 @@ export function QuoteForm() {
       website: values.website,
     };
     // Belt and braces: the full schema, exactly as the server will run it.
-    const check = quoteRequestSchema.safeParse(payload);
+    const check = publicSchemas(locale).quoteRequestSchema.safeParse(payload);
     if (!check.success) {
       const errs = fieldErrors(check.error);
       setErrors(errs);
@@ -267,7 +426,10 @@ export function QuoteForm() {
     }
 
     setStatus({ kind: "submitting" });
-    const result = await apiRequest<{ reference: string }>("/api/quotes", { body: payload });
+    const result = await apiRequest<{ reference: string }>("/api/quotes", {
+      body: payload,
+      locale,
+    });
 
     if (result.ok) {
       try {
@@ -287,28 +449,35 @@ export function QuoteForm() {
 
     setStatus({
       kind: "error",
-      title: result.code === "rate_limited" ? "Too many requests" : "Your request wasn't sent",
+      title: result.code === "rate_limited" ? t.rateLimited : t.notSent,
       message: result.message,
     });
   }
 
   if (status.kind === "success") {
-    return <Success reference={status.reference} name={values.name} headingRef={headingRef} />;
+    return (
+      <Success
+        reference={status.reference}
+        name={values.name}
+        headingRef={headingRef}
+        locale={locale}
+      />
+    );
   }
 
   const submitting = status.kind === "submitting";
-  const current = STEPS[step]!;
+  const total = STEP_KEYS.length;
 
   return (
     <div className="grid gap-10 lg:grid-cols-[14rem_1fr] lg:gap-16">
-      <nav aria-label="Quote request progress">
+      <nav aria-label={t.progress}>
         <ol className="flex gap-2 lg:flex-col lg:gap-0">
-          {STEPS.map((s, i) => {
+          {STEP_KEYS.map((key, i) => {
             const done = i < step;
             const active = i === step;
             return (
               <li
-                key={s.key}
+                key={key}
                 aria-current={active ? "step" : undefined}
                 className={cn(
                   "flex flex-1 flex-col gap-2 lg:flex-row lg:items-center lg:gap-3 lg:py-3",
@@ -344,10 +513,11 @@ export function QuoteForm() {
                   )}
                 >
                   <span className="sr-only">
-                    Step {i + 1} of {STEPS.length}:{" "}
+                    {t.stepOf(i + 1, total)}
+                    {locale === "fr" ? " : " : ": "}
                   </span>
-                  {s.title}
-                  {done && <span className="sr-only"> (completed)</span>}
+                  {t.steps[key]}
+                  {done && <span className="sr-only">{t.completed}</span>}
                 </span>
               </li>
             );
@@ -362,21 +532,19 @@ export function QuoteForm() {
         aria-busy={submitting}
         onSubmit={(e) => {
           e.preventDefault();
-          if (step < STEPS.length - 1) next();
+          if (step < total - 1) next();
           else void submit();
         }}
         className="flex max-w-2xl flex-col gap-8"
       >
         <div className="flex flex-col gap-2">
-          <p className="type-small text-muted">
-            Step {step + 1} of {STEPS.length}
-          </p>
+          <p className="type-small text-muted">{t.stepOf(step + 1, total)}</p>
           <h2 id="step-title" ref={headingRef} tabIndex={-1} className="type-h2 outline-none">
-            {current.title}
+            {t.steps[STEP_KEYS[step]!]}
           </h2>
           {fromCalculator && step === 0 && (
             <p className="type-small bg-sun-soft w-fit rounded-[var(--radius-sm)] px-3 py-2">
-              We&apos;ve filled in what you entered in the calculator. Check it and carry on.
+              {t.prefilled}
             </p>
           )}
         </div>
@@ -393,27 +561,27 @@ export function QuoteForm() {
           <>
             <ChoiceGroup
               name="segment"
-              legend="What kind of site is it?"
+              legend={t.segment}
               value={values.segment}
               onChange={(v) => set("segment", v)}
               error={errors["site.segment"]}
               columns={2}
-              options={SEGMENTS.map((s) => ({ value: s, label: SEGMENT_LABEL[s] }))}
+              options={SEGMENTS.map((s) => ({ value: s, label: l.segment[s] }))}
             />
             <SelectField
               id="location"
-              label="Where is it?"
-              placeholder="Choose a city"
+              label={t.location}
+              placeholder={t.chooseCity}
               value={values.location ?? ""}
               onChange={(e) => set("location", e.target.value as Location)}
               error={errors["site.location"]}
-              options={LOCATIONS.map((l) => ({ value: l, label: LOCATION[l].label }))}
+              options={LOCATIONS.map((loc) => ({ value: loc, label: l.location[loc] }))}
             />
             <SelectField
               id="solution"
-              label="Which solution is closest to what you need?"
-              placeholder="Choose a solution"
-              hint="Not sure? Pick the nearest one — we'll advise after the call."
+              label={t.solution}
+              placeholder={t.chooseSolution}
+              hint={t.solutionHint}
               value={values.solution ?? ""}
               onChange={(e) => set("solution", e.target.value as SolutionSlug)}
               error={errors["site.solution"]}
@@ -421,40 +589,38 @@ export function QuoteForm() {
             />
             <ChoiceGroup
               name="timeline"
-              legend="When would you like it installed?"
+              legend={t.timeline}
               value={values.timeline}
               onChange={(v) => set("timeline", v)}
               error={errors["site.timeline"]}
               columns={2}
-              options={TIMELINES.map((t) => ({ value: t, label: TIMELINE_LABEL[t] }))}
+              options={TIMELINES.map((tl) => ({ value: tl, label: l.timeline[tl] }))}
             />
           </>
         )}
 
         {step === 1 && (
           <>
-            <p className="text-muted -mt-4">
-              A recent bill has both figures. If you only know one, that&apos;s fine.
-            </p>
+            <p className="text-muted -mt-4">{t.energyIntro}</p>
             <TextField
               id="bill"
-              label="Average monthly electricity bill"
+              label={t.bill}
               inputMode="numeric"
               autoComplete="off"
               suffix="FCFA"
-              placeholder="e.g. 1 500 000"
+              placeholder={t.example("1 500 000")}
               value={values.bill}
               onChange={(e) => set("bill", e.target.value)}
               error={errors["energy.monthlyBillXof"]}
             />
             <TextField
               id="kwh"
-              label="Average monthly consumption"
+              label={t.kwh}
               optional
               inputMode="numeric"
               autoComplete="off"
               suffix="kWh"
-              placeholder="e.g. 12 000"
+              placeholder={t.example("12 000")}
               value={values.kwh}
               onChange={(e) => set("kwh", e.target.value)}
               error={errors["energy.monthlyKwh"]}
@@ -462,18 +628,18 @@ export function QuoteForm() {
             <div className="grid gap-6 sm:grid-cols-2">
               <TextField
                 id="generator"
-                label="Generator use"
+                label={t.generator}
                 optional
                 inputMode="numeric"
                 autoComplete="off"
-                suffix="h / week"
+                suffix={t.perWeek}
                 value={values.generator}
                 onChange={(e) => set("generator", e.target.value)}
                 error={errors["energy.generatorHoursPerWeek"]}
               />
               <TextField
                 id="roof"
-                label="Roof space"
+                label={t.roof}
                 optional
                 inputMode="numeric"
                 autoComplete="off"
@@ -491,7 +657,7 @@ export function QuoteForm() {
             <div className="grid gap-6 sm:grid-cols-2">
               <TextField
                 id="name"
-                label="Full name"
+                label={t.name}
                 autoComplete="name"
                 value={values.name}
                 onChange={(e) => set("name", e.target.value)}
@@ -499,7 +665,7 @@ export function QuoteForm() {
               />
               <TextField
                 id="company"
-                label="Company or organisation"
+                label={t.company}
                 optional
                 autoComplete="organization"
                 value={values.company}
@@ -508,7 +674,7 @@ export function QuoteForm() {
               />
               <TextField
                 id="email"
-                label="Email"
+                label={t.email}
                 type="email"
                 autoComplete="email"
                 value={values.email}
@@ -517,21 +683,21 @@ export function QuoteForm() {
               />
               <TextField
                 id="phone"
-                label="Phone"
+                label={t.phone}
                 type="tel"
                 autoComplete="tel"
                 placeholder="+225 07 00 00 00 00"
                 value={values.phone}
                 onChange={(e) => set("phone", e.target.value)}
                 error={errors["contact.phone"]}
-                hint="We call before we email. WhatsApp is fine."
+                hint={t.phoneHint}
               />
             </div>
             <TextareaField
               id="message"
-              label="Anything else we should know?"
+              label={t.message}
               optional
-              placeholder="Outages you deal with, equipment that must stay on, roof type…"
+              placeholder={t.messagePlaceholder}
               value={values.message}
               onChange={(e) => set("message", e.target.value)}
               error={errors["contact.message"]}
@@ -542,21 +708,21 @@ export function QuoteForm() {
               onChange={(v) => set("consent", v)}
               error={errors["contact.consent"]}
             >
-              Kora Energy may use these details to prepare and discuss my quote, as described in the{" "}
+              {t.consentBefore}
               <Link href="/privacy" className="underline underline-offset-2">
-                privacy notice
+                {t.privacy}
               </Link>
               .
             </CheckboxField>
           </>
         )}
 
-        {step === 3 && <Review values={values} onEdit={setStep} />}
+        {step === 3 && <Review values={values} onEdit={setStep} locale={locale} />}
 
         <div className="border-line flex flex-wrap items-center gap-3 border-t pt-6">
           {step > 0 && (
             <Button variant="outline" onClick={() => setStep((s) => s - 1)} disabled={submitting}>
-              Back
+              {t.back}
             </Button>
           )}
           <Button
@@ -568,70 +734,83 @@ export function QuoteForm() {
           >
             {submitting ? (
               <>
-                <Spinner /> Sending your request…
+                <Spinner /> {t.sending}
               </>
-            ) : step < STEPS.length - 1 ? (
-              "Continue"
+            ) : step < total - 1 ? (
+              t.continue
             ) : (
-              "Send quote request"
+              t.send
             )}
           </Button>
         </div>
         <p className="sr-only" role="status" aria-live="polite">
-          {submitting ? "Sending your request" : ""}
+          {submitting ? t.sendingStatus : ""}
         </p>
       </form>
     </div>
   );
 }
 
-function Review({ values, onEdit }: { values: Values; onEdit: (step: number) => void }) {
+function Review({
+  values,
+  onEdit,
+  locale,
+}: {
+  values: Values;
+  onEdit: (step: number) => void;
+  locale: Locale;
+}) {
+  const t = COPY[locale];
+  const r = t.review;
+  const l = labels(locale);
   const energy = energyPayload(values);
   const groups: Array<{ step: number; title: string; rows: Array<[string, string | undefined]> }> =
     [
       {
         step: 0,
-        title: "Your site",
+        title: t.steps.site,
         rows: [
-          ["Type of site", values.segment && SEGMENT_LABEL[values.segment]],
-          ["Location", values.location && LOCATION[values.location].label],
-          ["Solution", solutions.find((s) => s.slug === values.solution)?.name],
-          ["Timeline", values.timeline && TIMELINE_LABEL[values.timeline]],
+          [r.segment, values.segment && l.segment[values.segment]],
+          [r.location, values.location && l.location[values.location]],
+          [r.solution, getSolutions(locale).find((s) => s.slug === values.solution)?.name],
+          [r.timeline, values.timeline && l.timeline[values.timeline]],
         ],
       },
       {
         step: 1,
-        title: "Your energy use",
+        title: t.steps.energy,
         rows: [
           [
-            "Monthly bill",
+            r.bill,
             energy.monthlyBillXof !== undefined
               ? `${formatNumber(energy.monthlyBillXof)} FCFA`
               : undefined,
           ],
           [
-            "Monthly consumption",
+            r.kwh,
             energy.monthlyKwh !== undefined ? `${formatNumber(energy.monthlyKwh)} kWh` : undefined,
           ],
           [
-            "Generator",
-            energy.generatorHoursPerWeek ? `${energy.generatorHoursPerWeek} h a week` : undefined,
+            r.generator,
+            energy.generatorHoursPerWeek
+              ? r.generatorValue(energy.generatorHoursPerWeek)
+              : undefined,
           ],
           [
-            "Roof space",
+            r.roof,
             energy.roofAreaM2 !== undefined ? `${formatNumber(energy.roofAreaM2)} m²` : undefined,
           ],
         ],
       },
       {
         step: 2,
-        title: "Your details",
+        title: t.steps.contact,
         rows: [
-          ["Name", values.name],
-          ["Company", values.company || undefined],
-          ["Email", values.email],
-          ["Phone", values.phone],
-          ["Message", values.message || undefined],
+          [r.name, values.name],
+          [r.company, values.company || undefined],
+          [r.email, values.email],
+          [r.phone, values.phone],
+          [r.message, values.message || undefined],
         ],
       },
     ];
@@ -640,7 +819,7 @@ function Review({ values, onEdit }: { values: Values; onEdit: (step: number) => 
     <div className="flex flex-col gap-6">
       {groups.map((g) => (
         <section
-          key={g.title}
+          key={g.step}
           aria-labelledby={`review-${g.step}`}
           className="ring-line rounded-[var(--radius-md)] ring-1"
         >
@@ -653,7 +832,8 @@ function Review({ values, onEdit }: { values: Values; onEdit: (step: number) => 
               onClick={() => onEdit(g.step)}
               className="type-small rounded-[var(--radius-xs)] font-semibold underline underline-offset-2"
             >
-              Change<span className="sr-only"> {g.title.toLowerCase()}</span>
+              {r.change}
+              <span className="sr-only"> {g.title.toLowerCase()}</span>
             </button>
           </div>
           <dl className="divide-line divide-y px-5">
@@ -676,46 +856,43 @@ function Success({
   reference,
   name,
   headingRef,
+  locale,
 }: {
   reference: string;
   name: string;
   headingRef: React.RefObject<HTMLHeadingElement | null>;
+  locale: Locale;
 }) {
-  const first = name.trim().split(/\s+/)[0];
+  const s = COPY[locale].success;
+  const first = name.trim().split(/\s+/)[0] ?? "";
   return (
     <div className="animate-fade-up mx-auto flex max-w-2xl flex-col gap-8" role="status">
       <CheckCircle2 className="text-success size-12" aria-hidden />
       <div className="flex flex-col gap-3">
         <h2 ref={headingRef} tabIndex={-1} className="type-h2 outline-none">
-          Request received{first ? `, ${first}` : ""}.
+          {s.title(first)}
         </h2>
         <p className="type-lead text-muted">
-          Your reference is <strong className="text-ink tabular">{reference}</strong>. Quote it if
-          you contact us about this request.
+          {s.refBefore}
+          <strong className="text-ink tabular">{reference}</strong>
+          {s.refAfter}
         </p>
       </div>
       <ol className="border-line flex flex-col border-t">
-        {[
-          ["Within one working day", "An energy specialist calls to go through your needs."],
-          ["Within about a week", "If solar makes sense for your site, we arrange a survey."],
-          ["After the survey", "You receive a written proposal with a fixed price."],
-        ].map(([when, what]) => (
+        {s.next.map(([when, what]) => (
           <li key={when} className="border-line grid gap-1 border-b py-4 sm:grid-cols-[13rem_1fr]">
             <span className="font-semibold">{when}</span>
             <span className="text-muted">{what}</span>
           </li>
         ))}
       </ol>
-      <p className="type-small text-muted bg-plaster rounded-[var(--radius-sm)] p-4">
-        Kora Energy is a concept project, so no one will actually call. Your request has been saved
-        to the demonstration back office, where it appears as a new lead.
-      </p>
+      <p className="type-small text-muted bg-plaster rounded-[var(--radius-sm)] p-4">{s.concept}</p>
       <div className="flex flex-wrap gap-3">
         <ButtonLink href="/projects" variant="secondary">
-          Browse concept projects
+          {s.projects}
         </ButtonLink>
         <ButtonLink href="/" variant="outline">
-          Back to the homepage
+          {s.home}
         </ButtonLink>
       </div>
     </div>

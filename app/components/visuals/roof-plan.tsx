@@ -1,7 +1,15 @@
 import { PANEL_WATTS } from "@/app/lib/solar/assumptions";
 import { layoutPanels, PANEL, panelCount } from "@/app/lib/solar/panel-layout";
 import { formatNumber } from "@/app/lib/format";
+import type { Locale } from "@/app/lib/i18n";
 import { cn } from "@/app/lib/utils";
+
+const CAPTION: Record<Locale, (panels: string, watts: number, w: string, d: string) => string> = {
+  en: (panels, watts, w, d) =>
+    `Illustrative layout: ${panels} panels of ${watts} W on a ${w} × ${d} m roof, with walkways for cleaning.`,
+  fr: (panels, watts, w, d) =>
+    `Implantation indicative : ${panels} panneaux de ${watts} W sur un toit de ${w} × ${d} m, avec allées de nettoyage.`,
+};
 
 /**
  * A plan view of the array, generated from the project's own numbers: roof
@@ -18,7 +26,9 @@ export function RoofPlan({
   label,
   caption = true,
   fill = false,
+  locale,
 }: {
+  locale: Locale;
   roof: { width: number; depth: number };
   systemKwp: number;
   className?: string;
@@ -69,9 +79,12 @@ export function RoofPlan({
       </svg>
       {caption && (
         <figcaption className="type-small text-muted">
-          Illustrative layout: {formatNumber(panels.length)} panels of {PANEL_WATTS} W on a{" "}
-          {formatNumber(roof.width)} × {formatNumber(roof.depth)} m roof, with walkways for
-          cleaning.
+          {CAPTION[locale](
+            formatNumber(panels.length),
+            PANEL_WATTS,
+            formatNumber(roof.width),
+            formatNumber(roof.depth)
+          )}
         </figcaption>
       )}
     </figure>

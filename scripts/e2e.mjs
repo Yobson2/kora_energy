@@ -2,11 +2,12 @@
 //
 //   node scripts/e2e.mjs --url=http://localhost:3000 [--shots=./e2e-shots]
 //
-// Walks the journeys that matter: every public page renders, the calculator
+// Walks the journeys that matter: every public page renders in both languages,
+// the language switcher keeps the visitor's place and inputs, the calculator
 // computes, the quote flow validates and submits, the contact form submits,
 // and the back office signs in, finds the new lead and moves it along the
 // pipeline. Exits non-zero on the first failure. Every Playwright action is
-// awaited and allowed to throw — a swallowed timeout reports a false pass.
+// awaited and allowed to throw  a swallowed timeout reports a false pass.
 import { chromium } from "playwright-core";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
@@ -77,6 +78,88 @@ try {
     expect(missing?.status() === 404, `unknown project returned ${missing?.status()}`);
   });
 
+  await step("French pages render in French, with one h1 each", async () => {
+    for (const route of [
+      "/fr",
+      "/fr/solutions",
+      "/fr/solutions/commercial",
+      "/fr/calculator",
+      "/fr/projects",
+      "/fr/projects/business-hotel-cocody",
+      "/fr/about",
+      "/fr/financing",
+      "/fr/faq",
+      "/fr/contact",
+      "/fr/quote",
+      "/fr/privacy",
+    ]) {
+      const response = await page.goto(BASE + route, { waitUntil: "networkidle" });
+      expect(response?.status() === 200, `${route} returned ${response?.status()}`);
+      const lang = await page.locator("html").getAttribute("lang");
+      expect(lang === "fr", `${route} has lang="${lang}"`);
+      const h1 = await page.locator("h1").count();
+      expect(h1 === 1, `${route} has ${h1} h1 elements`);
+      await page.getByText("Projet fictif.", { exact: true }).waitFor();
+      await shot(page, `fr${route.slice(3).replace(/\//g, "_") || "_home"}`);
+    }
+    const missing = await page.goto(BASE + "/fr/projects/does-not-exist");
+    expect(missing?.status() === 404, `unknown French project returned ${missing?.status()}`);
+    await page.getByRole("heading", { name: "Cette page n'existe pas." }).waitFor();
+    const en = await page.goto(BASE + "/en/about");
+    expect(new URL(page.url()).pathname === "/about", `/en/about landed on ${page.url()}`);
+    expect(en?.status() === 200, `/en/about redirect ended with ${en?.status()}`);
+  });
+
+  await step("language switcher keeps the page and the calculator inputs", async () => {
+    await page.goto(`${BASE}/calculator`, { waitUntil: "networkidle" });
+    await page.getByLabel("Average monthly bill").fill("900 000");
+    await page.waitForURL(/bill=900000/);
+    await page.getByRole("link", { name: "Français" }).click();
+    await page.waitForURL(/\/fr\/calculator\?.*bill=900000/);
+    expect((await page.locator("html").getAttribute("lang")) === "fr", "html lang not fr");
+    expect(
+      (await page.getByLabel("Facture mensuelle moyenne").inputValue()).replace(/\s/g, "") ===
+        "900000",
+      "bill lost on switching language"
+    );
+    await page.getByText("Économie estimée", { exact: true }).waitFor();
+    // Typing in French keeps the French address.
+    await page.getByLabel("Facture mensuelle moyenne").fill("950 000");
+    await page.waitForURL(/\/fr\/calculator\?.*bill=950000/);
+    await shot(page, "fr-calculator-result");
+    // Internal links stay in French.
+    expect(
+      (
+        await page
+          .getByRole("link", { name: "Demander un devis avec cette estimation" })
+          .getAttribute("href")
+      )?.startsWith("/fr/quote?"),
+      "quote link left the French site"
+    );
+    await page.getByRole("link", { name: "English" }).click();
+    await page.waitForURL(
+      (url) => url.pathname === "/calculator" && url.searchParams.get("bill") === "950000"
+    );
+    expect(!page.url().includes("/fr"), `switch back stayed French: ${page.url()}`);
+    expect((await page.locator("html").getAttribute("lang")) === "en", "html lang not en");
+  });
+
+  await step("French forms validate in French and the API answers in French", async () => {
+    await page.goto(`${BASE}/fr/contact`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: "Envoyer le message" }).click();
+    await page.getByText("Dites-nous en un peu plus : au moins 20 caractères.").waitFor();
+    const response = await page.request.post(`${BASE}/api/contact`, {
+      headers: { "Accept-Language": "fr", Origin: BASE },
+      data: { name: "x" },
+    });
+    const body = await response.json();
+    expect(response.status() === 422, `French API validation returned ${response.status()}`);
+    expect(
+      body.error.fields.name === "Saisissez votre nom.",
+      `server message not French: ${JSON.stringify(body.error.fields)}`
+    );
+  });
+
   await step("calculator updates as the visitor types", async () => {
     await page.goto(`${BASE}/calculator`, { waitUntil: "networkidle" });
     await page.getByLabel("Average monthly bill").fill("2 500 000");
@@ -133,7 +216,7 @@ try {
   await step("contact form validates and submits", async () => {
     await page.goto(`${BASE}/contact`, { waitUntil: "networkidle" });
     await page.getByRole("button", { name: "Send message" }).click();
-    await page.getByText("Tell us a little more — at least 20 characters.").waitFor();
+    await page.getByText("Tell us a little more: at least 20 characters.").waitFor();
     await page.getByLabel("Full name").fill("E2E Contact");
     await page.getByLabel("Email").fill(`contact-${stamp}@example.com`);
     await page.getByLabel("What is your message about?").selectOption("support");
@@ -152,7 +235,7 @@ try {
     await page.getByLabel("Password").fill("wrong-password");
     await page.getByRole("button", { name: "Sign in" }).click();
     await page.getByText("That email and password do not match an account.").waitFor();
-    await page.getByLabel("Password").fill("kora-demo-2026");
+    await page.getByLabel("Password").fill("kora-demo-2024");
     await page.getByRole("button", { name: "Sign in" }).click();
     await page.waitForURL(/\/admin\/leads$/);
 
@@ -188,6 +271,11 @@ try {
     await shot(m, "mobile-menu");
     await m.keyboard.press("Escape");
     await m.getByRole("dialog", { name: "Site menu" }).waitFor({ state: "hidden" });
+    await m.goto(`${BASE}/fr/solutions`, { waitUntil: "networkidle" });
+    const frWidth = await m.evaluate(() => document.documentElement.scrollWidth);
+    expect(frWidth <= 390, `horizontal overflow on mobile in French: ${frWidth}px`);
+    await m.getByRole("link", { name: "English" }).waitFor();
+    await shot(m, "mobile-fr-solutions");
     await m.goto(`${BASE}/calculator?bill=900000&segment=restaurant`, { waitUntil: "networkidle" });
     await shot(m, "mobile-calculator");
     await mobile.close();

@@ -1,8 +1,9 @@
-import { siteConfig } from "@/app/lib/site";
+import type { Locale } from "@/app/lib/i18n";
+import { siteConfig, siteCopy } from "@/app/lib/site";
 
 /**
  * Structured data. JSON.stringify output is additionally escaped for "<" so a
- * value can never close the <script> element — relevant for any graph built
+ * value can never close the <script> element  relevant for any graph built
  * from stored content (project titles come from the back office).
  */
 export function JsonLd({ data }: { data: Record<string, unknown> }) {
@@ -10,7 +11,12 @@ export function JsonLd({ data }: { data: Record<string, unknown> }) {
   return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: json }} />;
 }
 
-export function OrganizationJsonLd() {
+const FICTIONAL: Record<Locale, string> = {
+  en: "Fictional company: portfolio concept project.",
+  fr: "Entreprise fictive : projet de portfolio.",
+};
+
+export function OrganizationJsonLd({ locale }: { locale: Locale }) {
   return (
     <JsonLd
       data={{
@@ -22,7 +28,7 @@ export function OrganizationJsonLd() {
             name: siteConfig.name,
             legalName: siteConfig.legalName,
             url: siteConfig.url,
-            description: `${siteConfig.description} Fictional company — portfolio concept project.`,
+            description: `${siteCopy(locale).description} ${FICTIONAL[locale]}`,
             areaServed: { "@type": "Country", name: siteConfig.office.country },
           },
           {
@@ -31,7 +37,7 @@ export function OrganizationJsonLd() {
             url: siteConfig.url,
             name: siteConfig.name,
             publisher: { "@id": `${siteConfig.url}/#organization` },
-            inLanguage: "en",
+            inLanguage: ["en", "fr"],
           },
         ],
       }}

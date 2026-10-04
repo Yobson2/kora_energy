@@ -29,7 +29,7 @@ export default async function OverviewPage() {
         </p>
       </header>
 
-      {/* What needs doing comes first — a dashboard is a to-do list before it is a report. */}
+      {/* What needs doing comes first  a dashboard is a to-do list before it is a report. */}
       <section
         aria-labelledby="overdue-title"
         className="bg-paper ring-line rounded-[var(--radius-md)] ring-1"
@@ -83,7 +83,7 @@ export default async function OverviewPage() {
           },
           {
             label: "Win rate",
-            value: s.winRate === undefined ? "—" : formatPercent(s.winRate),
+            value: s.winRate === undefined ? "" : formatPercent(s.winRate),
             detail: `${s.byStatus.won} won, ${s.byStatus.lost} lost`,
           },
         ].map((k) => (

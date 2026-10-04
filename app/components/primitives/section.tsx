@@ -79,13 +79,7 @@ export function SectionHeading({
 }
 
 /** Marks fictional content in place, next to the thing it qualifies. */
-export function ConceptTag({
-  children = "Concept project",
-  className,
-}: {
-  children?: ReactNode;
-  className?: string;
-}) {
+export function ConceptTag({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <span
       className={cn(

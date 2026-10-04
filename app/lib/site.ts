@@ -1,7 +1,9 @@
+import type { Locale } from "@/app/lib/i18n";
+
 /**
  * Single source of truth for business identity.
  *
- * Kora Energy is FICTIONAL — a portfolio concept. Every contact detail below
+ * Kora Energy is FICTIONAL  a portfolio concept. Every contact detail below
  * is deliberately unusable: `.example` is a reserved domain that can never
  * receive mail, the phone number is a placeholder pattern, and the office is
  * a district, not an address. The concept banner and the footer say so on
@@ -16,7 +18,7 @@ export const siteConfig = {
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://kora-energy.example",
   themeColor: "#0f2a2e",
 
-  email: "hello@kora-energy.example",
+  email: "hello@kora-energy.com",
   phone: "+225 27 00 00 00 00",
   phoneHref: "tel:+2252700000000",
   whatsapp: "+225 07 00 00 00 00",
@@ -30,6 +32,32 @@ export const siteConfig = {
     { days: "Monday to Friday", time: "08:00 – 18:00" },
     { days: "Saturday", time: "09:00 – 13:00" },
   ],
-  /** Côte d'Ivoire is on GMT all year — no daylight saving. */
+  /** Côte d'Ivoire is on GMT all year  no daylight saving. */
   timezoneNote: "All times GMT (Abidjan time).",
 } as const;
+
+/**
+ * The identity lines that change with the page language. siteConfig keeps the
+ * English originals for the places that have no language (manifest, social
+ * card, back office).
+ */
+export function siteCopy(locale: Locale) {
+  if (locale === "fr") {
+    return {
+      tagline: "L'énergie solaire pour les entreprises d'Afrique de l'Ouest",
+      description:
+        "Kora Energy conçoit et installe des systèmes solaires et des batteries pour les entreprises, écoles, cliniques et logements de Côte d'Ivoire. Estimez vos économies en deux minutes.",
+      hours: [
+        { days: "Du lundi au vendredi", time: "08:00 – 18:00" },
+        { days: "Samedi", time: "09:00 – 13:00" },
+      ],
+      timezoneNote: "Heures GMT (heure d'Abidjan).",
+    };
+  }
+  return {
+    tagline: siteConfig.tagline,
+    description: siteConfig.description,
+    hours: siteConfig.hours,
+    timezoneNote: siteConfig.timezoneNote,
+  };
+}

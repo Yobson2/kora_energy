@@ -4,14 +4,14 @@ import { ConflictError, createProject, listProjects } from "@/app/server/project
 import { fail, internalError, ok, parseBody, requireAdmin } from "@/app/server/http";
 import { revalidateProjects } from "@/app/server/revalidate";
 
-/** GET /api/admin/projects — all projects, drafts included. */
+/** GET /api/admin/projects  all projects, drafts included. */
 export async function GET(request: NextRequest) {
   const auth = await requireAdmin(request);
   if ("response" in auth) return auth.response;
   return ok(await listProjects({ includeDrafts: true }));
 }
 
-/** POST /api/admin/projects — create a case study. */
+/** POST /api/admin/projects  create a case study. */
 export async function POST(request: NextRequest) {
   const auth = await requireAdmin(request);
   if ("response" in auth) return auth.response;

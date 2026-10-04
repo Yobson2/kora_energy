@@ -435,6 +435,7 @@ export function ProjectForm({ project }: { project?: Project }) {
                   systemKwp={kwp}
                   label="Preview of the roof plan"
                   caption={false}
+                  locale="en"
                 />
               </div>
               <p

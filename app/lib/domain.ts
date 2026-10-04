@@ -36,7 +36,7 @@ export const LEAD_SOURCE_LABEL: Record<LeadSource, string> = {
 
 /**
  * The sales pipeline, in order. A lead moves forward through these; `lost`
- * can be reached from anywhere. `won` is what makes a lead a customer —
+ * can be reached from anywhere. `won` is what makes a lead a customer
  * there is no separate customer table to fall out of sync.
  */
 export const LEAD_STATUSES = ["new", "contacted", "site-visit", "proposal", "won", "lost"] as const;
@@ -119,6 +119,17 @@ export type Lead = {
 
 export type ProjectResult = { label: string; value: string };
 
+/** The words of a case study, as opposed to its figures. */
+export type ProjectCopy = {
+  title: string;
+  client: string;
+  area: string;
+  summary: string;
+  challenge: string;
+  approach: string;
+  results: ProjectResult[];
+};
+
 export type Project = {
   id: string;
   slug: string;
@@ -141,6 +152,12 @@ export type Project = {
   results: ProjectResult[];
   /** Usable roof footprint, metres. Drives the generated roof-plan drawing. */
   roof: { width: number; depth: number };
+  /**
+   * The case study's words in other languages; the fields above are English.
+   * Only seeded studies carry one, and editing the English in the back office
+   * removes it (server/projects.ts), so a translation is never out of date.
+   */
+  translations?: { fr?: ProjectCopy };
   published: boolean;
   featured: boolean;
   updatedAt: string;

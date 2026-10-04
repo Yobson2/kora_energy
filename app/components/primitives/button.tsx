@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/app/components/primitives/link";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import { cn } from "@/app/lib/utils";
 
@@ -6,9 +6,9 @@ type Variant = "primary" | "secondary" | "outline" | "on-ink" | "ghost";
 type Size = "md" | "lg";
 
 /**
- * primary    sun fill, ink text — the one action that matters on a screen
- * secondary  ink fill — strong but not the headline action
- * outline    hairline — the alternative path
+ * primary    sun fill, ink text  the one action that matters on a screen
+ * secondary  ink fill  strong but not the headline action
+ * outline    hairline  the alternative path
  * on-ink     outline for dark sections
  * ghost      text-weight, for toolbars and tables
  */
@@ -47,7 +47,10 @@ export function buttonClasses({
   );
 }
 
-/** A link styled as a button. Navigation is always a link, never a button. */
+/**
+ * A link styled as a button. Navigation is always a link, never a button.
+ * Internal paths are language-free; Link keeps the visitor in their language.
+ */
 export function ButtonLink({
   href,
   variant,

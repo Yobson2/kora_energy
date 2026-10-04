@@ -1,5 +1,6 @@
 import Image from "next/image";
-import type { Photo } from "@/app/content/media";
+import { photoAlt, type Photo } from "@/app/content/media";
+import type { Locale } from "@/app/lib/i18n";
 import { cn } from "@/app/lib/utils";
 
 /**
@@ -16,7 +17,9 @@ export function PhotoFigure({
   className,
   rounded = true,
   focus,
+  locale,
 }: {
+  locale: Locale;
   photo: Photo;
   ratio?: string;
   sizes?: string;
@@ -39,7 +42,7 @@ export function PhotoFigure({
       >
         <Image
           src={photo.image}
-          alt={photo.alt}
+          alt={photoAlt(photo, locale)}
           fill
           sizes={sizes}
           priority={priority}
@@ -50,7 +53,7 @@ export function PhotoFigure({
       </div>
       <figcaption className="type-small text-muted">
         {caption ? `${caption} ` : ""}
-        Photo:{" "}
+        {locale === "fr" ? "Photo :" : "Photo:"}{" "}
         <a
           href={photo.credit.url}
           className="underline-offset-2 hover:underline"
@@ -58,7 +61,11 @@ export function PhotoFigure({
           target="_blank"
         >
           {photo.credit.author}
-          <span className="sr-only"> on {photo.credit.source} (opens in a new tab)</span>
+          <span className="sr-only">
+            {locale === "fr"
+              ? ` sur ${photo.credit.source} (nouvel onglet)`
+              : ` on ${photo.credit.source} (opens in a new tab)`}
+          </span>
         </a>
         <span aria-hidden>, {photo.credit.source}</span>
       </figcaption>

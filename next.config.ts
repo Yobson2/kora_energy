@@ -5,7 +5,7 @@ import type { NextConfig } from "next";
  *
  * Scripts are not locked down with a nonce-based CSP here: that forces every
  * page to render dynamically, which costs the marketing pages their static
- * output. What IS locked down is everything that does not cost performance —
+ * output. What IS locked down is everything that does not cost performance 
  * framing, MIME sniffing, referrer leakage, powerful browser features and
  * where forms may post.
  */

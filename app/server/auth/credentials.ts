@@ -22,7 +22,7 @@ const scryptAsync = promisify(scrypt) as (
 
 export const DEMO_ACCOUNT = {
   email: "demo@kora-energy.example",
-  password: "kora-demo-2026",
+  password: "kora-demo-2024",
   name: "Demo reviewer",
 };
 

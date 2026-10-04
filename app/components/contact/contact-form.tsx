@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useRef, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
 import { Button } from "@/app/components/primitives/button";
+import { Link } from "@/app/components/primitives/link";
 import {
   CheckboxField,
   FormAlert,
@@ -13,9 +13,12 @@ import {
   TextField,
   TextareaField,
 } from "@/app/components/forms/fields";
-import { CONTACT_TOPICS, CONTACT_TOPIC_LABEL, type ContactTopic } from "@/app/lib/domain";
-import { contactSchema, fieldErrors, type FieldErrors } from "@/app/lib/validation";
+import { useLocale } from "@/app/components/i18n/use-locale";
+import { labels } from "@/app/content/labels";
+import { CONTACT_TOPICS, type ContactTopic } from "@/app/lib/domain";
+import { fieldErrors, publicSchemas, type FieldErrors } from "@/app/lib/validation";
 import { apiRequest } from "@/app/lib/api-client";
+import type { Locale } from "@/app/lib/i18n";
 import { useFocusFirstError } from "@/app/components/forms/use-focus-first-error";
 
 type Values = {
@@ -46,7 +49,74 @@ type Status =
   | { kind: "error"; message: string }
   | { kind: "sent"; reference: string };
 
+const COPY: Record<
+  Locale,
+  {
+    sentTitle: string;
+    refBefore: string;
+    refAfter: string;
+    another: string;
+    notSent: string;
+    name: string;
+    company: string;
+    email: string;
+    phone: string;
+    topic: string;
+    chooseTopic: string;
+    message: string;
+    count: (n: number) => string;
+    consentBefore: string;
+    privacy: string;
+    sending: string;
+    send: string;
+  }
+> = {
+  en: {
+    sentTitle: "Message sent.",
+    refBefore: "Your reference is ",
+    refAfter:
+      ". In a real deployment the team would reply within one working day. As this is a concept project, the message has been saved to the demonstration back office instead.",
+    another: "Send another message",
+    notSent: "Your message wasn't sent",
+    name: "Full name",
+    company: "Company",
+    email: "Email",
+    phone: "Phone",
+    topic: "What is your message about?",
+    chooseTopic: "Choose a topic",
+    message: "Message",
+    count: (n) => `${n} / 2000 characters`,
+    consentBefore: "Kora Energy may use these details to reply to my message, as described in the ",
+    privacy: "privacy notice",
+    sending: "Sending…",
+    send: "Send message",
+  },
+  fr: {
+    sentTitle: "Message envoyé.",
+    refBefore: "Votre référence est ",
+    refAfter:
+      ". Dans un déploiement réel, l'équipe répondrait sous un jour ouvré. S'agissant d'un projet fictif, le message a été enregistré dans le back-office de démonstration.",
+    another: "Envoyer un autre message",
+    notSent: "Votre message n'a pas été envoyé",
+    name: "Nom complet",
+    company: "Entreprise",
+    email: "E-mail",
+    phone: "Téléphone",
+    topic: "Quel est l'objet de votre message ?",
+    chooseTopic: "Choisissez un objet",
+    message: "Message",
+    count: (n) => `${n} / 2000 caractères`,
+    consentBefore:
+      "Kora Energy peut utiliser ces informations pour répondre à mon message, comme décrit dans la ",
+    privacy: "politique de confidentialité",
+    sending: "Envoi…",
+    send: "Envoyer le message",
+  },
+};
+
 export function ContactForm() {
+  const locale = useLocale();
+  const t = COPY[locale];
   const [values, setValues] = useState<Values>(EMPTY);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [status, setStatus] = useState<Status>({ kind: "idle" });
@@ -62,7 +132,7 @@ export function ContactForm() {
     event.preventDefault();
     const payload = { ...values, topic: values.topic || undefined };
 
-    const parsed = contactSchema.safeParse(payload);
+    const parsed = publicSchemas(locale).contactSchema.safeParse(payload);
     if (!parsed.success) {
       setErrors(fieldErrors(parsed.error));
       focusFirstError();
@@ -70,7 +140,10 @@ export function ContactForm() {
     }
 
     setStatus({ kind: "sending" });
-    const result = await apiRequest<{ reference: string }>("/api/contact", { body: payload });
+    const result = await apiRequest<{ reference: string }>("/api/contact", {
+      body: payload,
+      locale,
+    });
     if (result.ok) {
       setStatus({ kind: "sent", reference: result.data.reference });
       setValues(EMPTY);
@@ -87,14 +160,14 @@ export function ContactForm() {
         className="animate-fade-up bg-plaster flex flex-col items-start gap-4 rounded-[var(--radius-md)] p-6 md:p-8"
       >
         <CheckCircle2 className="text-success size-10" aria-hidden />
-        <h2 className="type-h2">Message sent.</h2>
+        <h2 className="type-h2">{t.sentTitle}</h2>
         <p className="text-muted max-w-[52ch]">
-          Your reference is <strong className="text-ink tabular">{status.reference}</strong>. In a
-          real deployment the team would reply within one working day. As this is a concept project,
-          the message has been saved to the demonstration back office instead.
+          {t.refBefore}
+          <strong className="text-ink tabular">{status.reference}</strong>
+          {t.refAfter}
         </p>
         <Button variant="outline" onClick={() => setStatus({ kind: "idle" })}>
-          Send another message
+          {t.another}
         </Button>
       </div>
     );
@@ -112,7 +185,7 @@ export function ContactForm() {
       className="relative flex flex-col gap-6"
     >
       {status.kind === "error" && (
-        <FormAlert tone="error" title="Your message wasn't sent">
+        <FormAlert tone="error" title={t.notSent}>
           {status.message}
         </FormAlert>
       )}
@@ -121,7 +194,7 @@ export function ContactForm() {
       <div className="grid gap-6 sm:grid-cols-2">
         <TextField
           id="name"
-          label="Full name"
+          label={t.name}
           autoComplete="name"
           value={values.name}
           onChange={(e) => set("name", e.target.value)}
@@ -129,7 +202,7 @@ export function ContactForm() {
         />
         <TextField
           id="company"
-          label="Company"
+          label={t.company}
           optional
           autoComplete="organization"
           value={values.company}
@@ -138,7 +211,7 @@ export function ContactForm() {
         />
         <TextField
           id="email"
-          label="Email"
+          label={t.email}
           type="email"
           autoComplete="email"
           value={values.email}
@@ -147,7 +220,7 @@ export function ContactForm() {
         />
         <TextField
           id="phone"
-          label="Phone"
+          label={t.phone}
           optional
           type="tel"
           autoComplete="tel"
@@ -159,20 +232,23 @@ export function ContactForm() {
       </div>
       <SelectField
         id="topic"
-        label="What is your message about?"
-        placeholder="Choose a topic"
+        label={t.topic}
+        placeholder={t.chooseTopic}
         value={values.topic}
         onChange={(e) => set("topic", e.target.value as ContactTopic)}
         error={errors.topic}
-        options={CONTACT_TOPICS.map((t) => ({ value: t, label: CONTACT_TOPIC_LABEL[t] }))}
+        options={CONTACT_TOPICS.map((topic) => ({
+          value: topic,
+          label: labels(locale).contactTopic[topic],
+        }))}
       />
       <TextareaField
         id="message"
-        label="Message"
+        label={t.message}
         value={values.message}
         onChange={(e) => set("message", e.target.value)}
         error={errors.message}
-        hint={`${values.message.trim().length} / 2000 characters`}
+        hint={t.count(values.message.trim().length)}
       />
       <CheckboxField
         id="consent"
@@ -180,9 +256,9 @@ export function ContactForm() {
         onChange={(v) => set("consent", v)}
         error={errors.consent}
       >
-        Kora Energy may use these details to reply to my message, as described in the{" "}
+        {t.consentBefore}
         <Link href="/privacy" className="underline underline-offset-2">
-          privacy notice
+          {t.privacy}
         </Link>
         .
       </CheckboxField>
@@ -190,10 +266,10 @@ export function ContactForm() {
         <Button type="submit" variant="primary" size="lg" disabled={sending}>
           {sending ? (
             <>
-              <Spinner /> Sending…
+              <Spinner /> {t.sending}
             </>
           ) : (
-            "Send message"
+            t.send
           )}
         </Button>
       </div>

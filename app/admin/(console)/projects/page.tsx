@@ -34,7 +34,7 @@ export default async function AdminProjectsPage() {
         <div className="bg-paper ring-line rounded-[var(--radius-md)] p-8 ring-1">
           <p className="font-semibold">No projects yet.</p>
           <p className="text-muted mt-1">
-            Create the first case study — it stays a draft until you publish it.
+            Create the first case study  it stays a draft until you publish it.
           </p>
         </div>
       ) : (

@@ -194,13 +194,13 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
                     </div>
                   </td>
                   <td className="type-small px-4 py-3">
-                    {lead.site.segment ? SEGMENT_LABEL[lead.site.segment] : "—"}
+                    {lead.site.segment ? SEGMENT_LABEL[lead.site.segment] : ""}
                     <div className="text-muted">
                       {lead.site.location ? LOCATION[lead.site.location].label : ""}
                     </div>
                   </td>
                   <td className="type-small tabular px-4 py-3">
-                    {lead.estimate ? formatKwp(lead.estimate.systemKwp) : "—"}
+                    {lead.estimate ? formatKwp(lead.estimate.systemKwp) : ""}
                   </td>
                   <td className="type-small px-4 py-3">{LEAD_SOURCE_LABEL[lead.source]}</td>
                   <td className="px-4 py-3">

@@ -26,7 +26,7 @@ function activity(kind: Activity["kind"], text: string, by: string): Activity {
 /**
  * Recomputes the estimate from the submitted inputs rather than trusting any
  * figure sent by the browser. Returns undefined if the inputs cannot produce
- * one (e.g. a tiny roof) — a quote request is still worth having without it.
+ * one (e.g. a tiny roof)  a quote request is still worth having without it.
  */
 function snapshot(request: QuoteRequest): EstimateSnapshot | undefined {
   const independence: Independence =
@@ -178,7 +178,7 @@ export async function addLeadNote(id: string, text: string, by: string): Promise
 }
 
 /**
- * The numbers on the dashboard. Every figure is derived from leads — nothing
+ * The numbers on the dashboard. Every figure is derived from leads  nothing
  * is a stored "statistic" that could drift from the records it summarises.
  */
 export async function pipelineSummary(now = new Date()) {
